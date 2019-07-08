@@ -2,4 +2,5 @@
     <string name="app_name">Karuba Tile Selector</string>
     <string name="pick_tile_from_stack">Press here to flip a tile from the stack</string>
     <string name="no_more_tiles">No more tiles to draw</string>
+    <string name="tile">Tile</string>
 </resources>

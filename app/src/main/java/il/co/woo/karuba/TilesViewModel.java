@@ -10,6 +10,7 @@ public class TilesViewModel extends ViewModel {
 
     private ArrayList<Integer> mTileArray;
     private int mNumberOfSelectedTiles;
+    private int mLastSelectedRandom;
 
     public TilesViewModel() {
         initTiles();
@@ -18,6 +19,7 @@ public class TilesViewModel extends ViewModel {
     public void initTiles() {
         //no tiles selected yet
         mNumberOfSelectedTiles = 0;
+        mLastSelectedRandom = 0;
         if (mTileArray != null)
             mTileArray.clear();
 
@@ -36,14 +38,16 @@ public class TilesViewModel extends ViewModel {
         final int random = new Random().nextInt(NUMBER_OF_TILES-mNumberOfSelectedTiles);
         //increase the number of selected tiles;
         mNumberOfSelectedTiles++;
-        int randomTileNumber = mTileArray.get(random);
+        mLastSelectedRandom = mTileArray.get(random);
         mTileArray.remove(random);
-        return randomTileNumber;
+        return mLastSelectedRandom;
     }
 
     int getNumberOfSelectedTiles() {
         return mNumberOfSelectedTiles;
     }
+
+    int getLastSelectedTile() { return mLastSelectedRandom; }
 
 
 }

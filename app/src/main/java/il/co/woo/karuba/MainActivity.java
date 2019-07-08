@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -18,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProviders;
 
 import com.bumptech.glide.Glide;
+
+import java.util.Locale;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -37,6 +40,9 @@ public class MainActivity extends AppCompatActivity {
     private TilesViewModel mViewModel;
     private int mNumberOfMovedTiles = 0;
 
+    private TextToSpeech mTTS;
+    private boolean mTTSInit;
+
 
 
     @BindView(R.id.new_tile) ImageButton mNewTileButton;
@@ -52,6 +58,26 @@ public class MainActivity extends AppCompatActivity {
         mViewModel = ViewModelProviders.of(this).get(TilesViewModel.class);
 
         mGameBoardImageView.post(this::loadGameBoard);
+
+        mTTSInit = false;
+        mTTS = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = mTTS.setLanguage(Locale.ENGLISH);
+
+                    if (result == TextToSpeech.LANG_MISSING_DATA
+                            || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "Language not supported");
+                    } else {
+                        mTTSInit = true;
+                    }
+                } else {
+                    Log.e("TTS", "Initialization failed");
+                }
+            }
+        });
+
 
         mNewTileButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on new tile button");
@@ -237,11 +263,28 @@ public class MainActivity extends AppCompatActivity {
                             .withLayer()
                             .rotationY(0)
                             .setDuration(350)
-                            .withEndAction(() -> {
-                                //re enable the button
-                                mNewTileButton.setEnabled(true);
-                            })
+                            .withEndAction(this::allAnimationEnd)
                             .start();
                 });
+    }
+
+    private void allAnimationEnd() {
+        //re enable the button
+        mNewTileButton.setEnabled(true);
+        if (mTTSInit) {
+            String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
+            mTTS.setSpeechRate(0.7f);
+            mTTS.speak(text,TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mTTS != null) {
+            mTTS.stop();
+            mTTS.shutdown();
+        }
+
+        super.onDestroy();
     }
 }
