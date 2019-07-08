@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
@@ -16,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.lifecycle.ViewModelProviders;
 
 import com.bumptech.glide.Glide;
@@ -47,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.new_tile) ImageButton mNewTileButton;
     @BindView(R.id.game_board) ImageView mGameBoardImageView;
+    @BindView(R.id.main_layout) ConstraintLayout mMainLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         mViewModel = ViewModelProviders.of(this).get(TilesViewModel.class);
 
-        mGameBoardImageView.post(this::loadGameBoard);
+        mGameBoardImageView.post(this::loadInitialImages);
 
         mTTSInit = false;
         mTTS = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
@@ -131,12 +134,17 @@ public class MainActivity extends AppCompatActivity {
         mNewTileButton.setCameraDistance(distance);
     }
 
-    private void loadGameBoard() {
-        Log.d(TAG, "loadGameBoard: Enter");
+    private void loadInitialImages() {
+        Log.d(TAG, "loadInitialImages: Enter");
         Glide.with(this)
                 .load(R.drawable.tile_board)
                 .centerCrop()
                 .into(mGameBoardImageView);
+
+        Bitmap bMap = BitmapFactory.decodeResource(getResources(), R.drawable.jungle);
+        Bitmap bMapScaled = Bitmap.createScaledBitmap(bMap, mMainLayout.getWidth(), mMainLayout.getHeight(), true);
+        mMainLayout.setBackground(new BitmapDrawable(getResources(),bMapScaled));
+
     }
 
 
