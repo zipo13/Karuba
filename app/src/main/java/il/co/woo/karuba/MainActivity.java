@@ -87,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
                         .load(R.drawable.empty_tile)
                         .into(mNewTileButton);
             }
-
         });
 
 
