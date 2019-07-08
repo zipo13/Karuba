@@ -1,6 +1,7 @@
 package il.co.woo.karuba;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,20 +27,19 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int NUMBER_OF_TILE_ROWS = 6;
     private static final int NUMBER_OF_TILE_COLUMNS = 6;
-    private static final int TILE_GAP = 6;
-    public static final int NEW_IMAGEVIEW_ID = 25879;
+    public static final int NEW_IMAGE_VIEW_ID = 25879;
 
     private static final String TILE_IMG_NAME_PREFIX = "tile_";
     private static final String DRAWABLE_TYPE = "drawable";
     private static final String TAG = "MainActivity";
     private boolean mFirstTile = true;
+    private boolean mLastTile = false;
     private TilesViewModel mViewModel;
     private int mNumberOfMovedTiles = 0;
 
 
 
     @BindView(R.id.new_tile) ImageButton mNewTileButton;
-    @BindView(R.id.last_tile) ImageView mLastTileImageView;
     @BindView(R.id.game_board) ImageView mGameBoardImageView;
 
     @Override
@@ -59,42 +59,51 @@ public class MainActivity extends AppCompatActivity {
             //check if there are more tiles to draw
             if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
                 Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            //the first tile does not need to be moved
-            if (mFirstTile) {
-                drawNewTile();
-                mFirstTile = false;
-                return;
+                if (!mLastTile)
+                    mLastTile = true;
+                else
+                    return;
             }
 
             //duplicate the last tile
-            ImageView newView = duplicateView(mLastTileImageView);
-            //generate a new tile under the newly duplicated tile
-            drawNewTile();
-
-            //the animation needs to be postponed because we need to wait fot the
-            //duplicated tile to generated first
-            final Handler handler = new Handler();
-            handler.postDelayed(() ->
-                    slideTileToBaord(newView), 150);
+            if (!mFirstTile) {
+                ImageView newView = duplicateView(mNewTileButton);
+                //the animation needs to be postponed because we need to wait fot the
+                //duplicated tile to generated first
+                final Handler handler = new Handler();
+                handler.postDelayed(() ->
+                        slideTileToBaord(newView), 150);
+            }
+            mFirstTile = false;
 
             //if this was the last tile replace the tile with empty tile
-            if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
+            if (mLastTile) {
+                mNewTileButton.setTag(null);
                 Glide
                         .with(this)
                         .load(R.drawable.empty_tile)
                         .into(mNewTileButton);
+            } else {
+                mNewTileButton.setImageResource(R.drawable.tile_back);
+                startFlipAnimation(getNewRandomTileID());
             }
         });
 
+        prepareCamDistanceForFlipAffect();
+    }
 
+    //this code is for the flip affect
+    //if the camera is too close in some cases the filp will cut because its too close to the
+    //screen
+    private void prepareCamDistanceForFlipAffect() {
+        Log.d(TAG, "prepareCamDistanceForFlipAffect: Enter");
+        float scale = getApplicationContext().getResources().getDisplayMetrics().density;
+        float distance = mNewTileButton.getCameraDistance() * (scale );
+        mNewTileButton.setCameraDistance(distance);
     }
 
     private void loadGameBoard() {
-
-        //mGameBoardImageView.setImageResource(R.drawable.tile_board);
+        Log.d(TAG, "loadGameBoard: Enter");
         Glide.with(this)
                 .load(R.drawable.tile_board)
                 .centerCrop()
@@ -108,12 +117,12 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint("InflateParams")
         ImageView newImageView = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
         //generate a new unique ID
-        newImageView.setId(NEW_IMAGEVIEW_ID + mNumberOfMovedTiles);
+        newImageView.setId(NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles);
         newImageView.setTag(imageView.getTag());
 
         //put it exactly over the old tile
-        newImageView.setX(mLastTileImageView.getX());
-        newImageView.setY(mLastTileImageView.getY());
+        newImageView.setX(imageView.getX());
+        newImageView.setY(imageView.getY());
 
         //get the image of the last tile and put it in the new tile
         newImageView.setImageDrawable(imageView.getDrawable());
@@ -128,27 +137,16 @@ public class MainActivity extends AppCompatActivity {
         return newImageView;
     }
 
-    private void drawNewTile() {
-        Log.d(TAG, "drawNewTile: Enter");
+    private int getNewRandomTileID() {
+        Log.d(TAG, "getNewRandomTileID: Enter");
         int random = mViewModel.getRandomTile();
         if (random == 0)
-            return;
-
-        //replace the image in the last tile image view with the tile number generated
-
+            return 0;
         //Generate the resource name
         String tileFileName = TILE_IMG_NAME_PREFIX + random;
 
         //locate the id
-        int imageResID = getResources().getIdentifier(tileFileName, DRAWABLE_TYPE,getPackageName());
-        if (imageResID != 0) {
-            scaleResIntoImageView(mLastTileImageView.getWidth(),mLastTileImageView.getHeight(),imageResID,mLastTileImageView);
-            //mLastTileImageView.setImageResource(imageResID);
-            //save the resID so it will be used later to reload a resampled image
-            mLastTileImageView.setTag(imageResID);
-        } else {
-            Log.d(TAG, "drawNewTile: failed to located tile resource id for tile name: " + tileFileName);
-        }
+        return getResources().getIdentifier(tileFileName, DRAWABLE_TYPE,getPackageName());
     }
 
     private void slideTileToBaord(ImageView imageView) {
@@ -186,10 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 .scaleY(scaleY)
                 .x(finalX)
                 .y(finalY)
-                .setListener(new Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(Animator animation) {}
-
+                .setListener(new AnimatorListenerAdapter()  {
                     @Override
                     public void onAnimationEnd(Animator animation) {
 
@@ -203,20 +198,43 @@ public class MainActivity extends AppCompatActivity {
                         scaleResIntoImageView(reqWidth, reqHeight, tag, imageView);
                     }
 
-                    @Override
-                    public void onAnimationCancel(Animator animation) {}
-
-                    @Override
-                    public void onAnimationRepeat(Animator animation) {}
                 });
         mNumberOfMovedTiles++;
 
     }
 
     private void scaleResIntoImageView(int reqWidth, int reqHeight, int resID, ImageView imageView) {
+        Log.d(TAG, "scaleResIntoImageView: Enter");
         Bitmap bMap = BitmapFactory.decodeResource(getResources(), resID);
         Bitmap bMapScaled = Bitmap.createScaledBitmap(bMap, reqWidth, reqHeight, true);
         // Loads the resized Bitmap into an ImageView
         imageView.setImageBitmap(bMapScaled);
+    }
+
+
+    public void startFlipAnimation(int newTileResID) {
+        Log.d(TAG, "startFlipAnimation: Enter");
+        //flip animation is made of 2 parts
+        //1. flip the imageview half way (90 deg)
+        //2. replace the image
+        //3. flip the imageview back (-90 deg)
+        mNewTileButton.animate()
+                //flip it half way
+                .setStartDelay(300)
+                .withLayer()
+                .rotationY(90)
+                .setDuration(350)
+                .withEndAction(() -> {
+                    //replace the image
+                    scaleResIntoImageView(mNewTileButton.getWidth(),mNewTileButton.getHeight(),newTileResID,mNewTileButton);
+                    //flip it back
+                    mNewTileButton.setTag(newTileResID);
+                    mNewTileButton.setRotationY(-90);
+                    mNewTileButton.animate()
+                            .withLayer()
+                            .rotationY(0)
+                            .setDuration(350)
+                            .start();
+                });
     }
 }
