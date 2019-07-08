@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class TilesViewModel extends ViewModel {
-    private static final int NUMBER_OF_TILES = 36;
+    static final int NUMBER_OF_TILES = 36;
 
     private ArrayList<Integer> mTileArray;
     private int mNumberOfSelectedTiles;

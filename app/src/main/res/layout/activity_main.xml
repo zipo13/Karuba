@@ -7,6 +7,18 @@
     android:background="@color/colorJungleGreen"
     tools:context=".MainActivity">
 
+    <ImageView
+        android:id="@+id/game_board"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintDimensionRatio="1:1"
+        android:scaleType="fitXY"
+        android:contentDescription="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@drawable/tile_board"/>
+
 
     <ImageButton
         android:id="@+id/new_tile"
@@ -23,16 +35,7 @@
         app:srcCompat="@drawable/tile_back" />
 
 
-    <ImageView
-        android:id="@+id/game_board"
-        android:layout_width="400dp"
-        android:layout_height="400dp"
-        android:scaleType="fitXY"
-        android:contentDescription="@null"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/tile_board" />
+
 
     <include
         layout="@layout/tile_image_view"

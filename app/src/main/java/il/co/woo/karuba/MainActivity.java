@@ -1,21 +1,22 @@
 package il.co.woo.karuba;
 
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
+import android.animation.Animator;
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewPropertyAnimator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.lifecycle.ViewModelProviders;
+
+import com.bumptech.glide.Glide;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -50,10 +51,17 @@ public class MainActivity extends AppCompatActivity {
 
         mViewModel = ViewModelProviders.of(this).get(TilesViewModel.class);
 
-
+        mGameBoardImageView.post(this::loadGameBoard);
 
         mNewTileButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on new tile button");
+
+            //check if there are more tiles to draw
+            if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
+                Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             //the first tile does not need to be moved
             if (mFirstTile) {
                 drawNewTile();
@@ -70,10 +78,30 @@ public class MainActivity extends AppCompatActivity {
             //duplicated tile to generated first
             final Handler handler = new Handler();
             handler.postDelayed(() ->
-                    slideTileToBaord(newView), 100);
+                    slideTileToBaord(newView), 150);
+
+            //if this was the last tile replace the tile with empty tile
+            if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
+                Glide
+                        .with(this)
+                        .load(R.drawable.empty_tile)
+                        .into(mNewTileButton);
+            }
 
         });
+
+
     }
+
+    private void loadGameBoard() {
+
+        //mGameBoardImageView.setImageResource(R.drawable.tile_board);
+        Glide.with(this)
+                .load(R.drawable.tile_board)
+                .centerCrop()
+                .into(mGameBoardImageView);
+    }
+
 
     private ImageView duplicateView(ImageView imageView) {
         Log.d(TAG, "duplicateView: Enter");
@@ -81,7 +109,8 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint("InflateParams")
         ImageView newImageView = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
         //generate a new unique ID
-        newImageView.setId(NEW_IMAGEVIEW_ID + mViewModel.getNumberOfSelectedTiles());
+        newImageView.setId(NEW_IMAGEVIEW_ID + mNumberOfMovedTiles);
+        newImageView.setTag(imageView.getTag());
 
         //put it exactly over the old tile
         newImageView.setX(mLastTileImageView.getX());
@@ -114,7 +143,10 @@ public class MainActivity extends AppCompatActivity {
         //locate the id
         int imageResID = getResources().getIdentifier(tileFileName, DRAWABLE_TYPE,getPackageName());
         if (imageResID != 0) {
-            mLastTileImageView.setImageResource(imageResID);
+            scaleResIntoImageView(mLastTileImageView.getWidth(),mLastTileImageView.getHeight(),imageResID,mLastTileImageView);
+            //mLastTileImageView.setImageResource(imageResID);
+            //save the resID so it will be used later to reload a resampled image
+            mLastTileImageView.setTag(imageResID);
         } else {
             Log.d(TAG, "drawNewTile: failed to located tile resource id for tile name: " + tileFileName);
         }
@@ -154,9 +186,38 @@ public class MainActivity extends AppCompatActivity {
                 .scaleX(scaleX)
                 .scaleY(scaleY)
                 .x(finalX)
-                .y(finalY);
+                .y(finalY)
+                .setListener(new Animator.AnimatorListener() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {}
+
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+
+                        // For changing actual height and width
+                        int reqWidth = Math.round(imageView.getWidth() * imageView.getScaleX());
+                        int reqHeight = Math.round(imageView.getHeight() * imageView.getScaleY());
+
+                        //resmaple the bitmap to save memory
+                        // Load a bitmap from the drawable folder
+                        int tag = (int)imageView.getTag();
+                        scaleResIntoImageView(reqWidth, reqHeight, tag, imageView);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {}
+
+                    @Override
+                    public void onAnimationRepeat(Animator animation) {}
+                });
         mNumberOfMovedTiles++;
 
     }
 
+    private void scaleResIntoImageView(int reqWidth, int reqHeight, int resID, ImageView imageView) {
+        Bitmap bMap = BitmapFactory.decodeResource(getResources(), resID);
+        Bitmap bMapScaled = Bitmap.createScaledBitmap(bMap, reqWidth, reqHeight, true);
+        // Loads the resized Bitmap into an ImageView
+        imageView.setImageBitmap(bMapScaled);
+    }
 }
