@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         mNewTileButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on new tile button");
 
+
             //check if there are more tiles to draw
             if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
                 Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
@@ -64,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
                 else
                     return;
             }
+            //to prevent fast clicks before the animation is over disable the button
+            mNewTileButton.setEnabled(false);
 
             //duplicate the last tile
             if (!mFirstTile) {
@@ -93,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //this code is for the flip affect
-    //if the camera is too close in some cases the filp will cut because its too close to the
+    //if the camera is too close in some cases the flip will cut because its too close to the
     //screen
     private void prepareCamDistanceForFlipAffect() {
         Log.d(TAG, "prepareCamDistanceForFlipAffect: Enter");
@@ -234,6 +237,10 @@ public class MainActivity extends AppCompatActivity {
                             .withLayer()
                             .rotationY(0)
                             .setDuration(350)
+                            .withEndAction(() -> {
+                                //re enable the button
+                                mNewTileButton.setEnabled(true);
+                            })
                             .start();
                 });
     }
