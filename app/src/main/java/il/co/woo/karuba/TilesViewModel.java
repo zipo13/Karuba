@@ -40,4 +40,10 @@ public class TilesViewModel extends ViewModel {
         mTileArray.remove(random);
         return randomTileNumber;
     }
+
+    int getNumberOfSelectedTiles() {
+        return mNumberOfSelectedTiles;
+    }
+
+
 }

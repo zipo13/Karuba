@@ -10,16 +10,18 @@
 
     <ImageButton
         android:id="@+id/new_tile"
-        android:layout_width="163dp"
-        android:layout_height="126dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
         android:layout_marginBottom="8dp"
         android:background="@null"
-        android:contentDescription="@string/pick_tile_from_bag"
+        android:contentDescription="@string/pick_tile_from_stack"
         android:scaleType="fitXY"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/bag" />
+        app:srcCompat="@drawable/tile_back" />
+
 
     <ImageView
         android:id="@+id/game_board"
@@ -32,13 +34,9 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/tile_board" />
 
-    <ImageView
-        android:id="@+id/last_tile"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/game_board"
-        android:contentDescription="@null"
-        app:srcCompat="@drawable/empty_tile" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <include
+        layout="@layout/tile_image_view"
+        tools:layout_editor_absoluteX="154dp"
+        tools:layout_editor_absoluteY="474dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>

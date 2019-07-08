@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Karuba Tile Selector</string>
-    <string name="pick_tile_from_bag">Press here to pick a tile from the bag</string>
+    <string name="pick_tile_from_stack">Press here to flip a tile from the stack</string>
 </resources>
