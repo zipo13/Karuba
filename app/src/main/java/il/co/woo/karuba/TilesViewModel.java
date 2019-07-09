@@ -12,6 +12,16 @@ public class TilesViewModel extends ViewModel {
     private int mNumberOfSelectedTiles;
     private int mLastSelectedRandom;
 
+    //the games array indicates if a tile has a gem mark on it
+    private boolean[] mGems = {false,false,true,true,
+            false,false,false,false,
+            true,true,true,false,true,
+            true,true,true,false,false,
+            false,false,false,false,
+            false,false,false,false,
+            true,false,false,false,true,
+            true,true,true,false,false};
+
     public TilesViewModel() {
         initTiles();
     }
@@ -48,6 +58,15 @@ public class TilesViewModel extends ViewModel {
     }
 
     int getLastSelectedTile() { return mLastSelectedRandom; }
+
+    boolean getTileHasGem(int tileIdx) {
+       //the tile index is 1 based and the array is zero based so adjust
+        int i = tileIdx -1;
+       if (i < 0 || i >= NUMBER_OF_TILES)
+           return false;
+
+       return mGems[i];
+    }
 
 
 }

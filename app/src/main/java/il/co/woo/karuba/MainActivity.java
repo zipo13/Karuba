@@ -6,9 +6,12 @@ import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -22,6 +25,7 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.bumptech.glide.Glide;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 import butterknife.BindView;
@@ -44,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
 
     private TextToSpeech mTTS;
     private boolean mTTSInit;
+
+    private boolean mPlayTTS = true;
+    private boolean mPlayGemChime = true;
 
 
 
@@ -73,7 +80,25 @@ public class MainActivity extends AppCompatActivity {
                             || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                         Log.e("TTS", "Language not supported");
                     } else {
+                        Log.d(TAG, "onInit: SUCCESS");
                         mTTSInit = true;
+                        mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            @Override
+                            public void onStart(String utteranceId) {}
+
+                            @Override
+                            public void onDone(String utteranceId) {
+                                Log.d(TAG, "onDone: TTS: " + utteranceId);
+                                if (mPlayGemChime) {
+                                    playChimeSound();
+                                }
+                            }
+
+                            @Override
+                            public void onError(String utteranceId) {
+                                Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
+                            }
+                        });
                     }
                 } else {
                     Log.e("TTS", "Initialization failed");
@@ -104,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 //duplicated tile to generated first
                 final Handler handler = new Handler();
                 handler.postDelayed(() ->
-                        slideTileToBaord(newView), 150);
+                        slideTileToBoard(newView), 150);
             }
             mFirstTile = false;
 
@@ -186,8 +211,8 @@ public class MainActivity extends AppCompatActivity {
         return getResources().getIdentifier(tileFileName, DRAWABLE_TYPE,getPackageName());
     }
 
-    private void slideTileToBaord(ImageView imageView) {
-        Log.d(TAG, "slideTileToBaord: Enter");
+    private void slideTileToBoard(ImageView imageView) {
+        Log.d(TAG, "slideTileToBoard: Enter");
         //check that we did not get garbage
         if (imageView == null)
             return;
@@ -279,10 +304,27 @@ public class MainActivity extends AppCompatActivity {
     private void allAnimationEnd() {
         //re enable the button
         mNewTileButton.setEnabled(true);
-        if (mTTSInit) {
-            String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
-            mTTS.setSpeechRate(0.7f);
-            mTTS.speak(text,TextToSpeech.QUEUE_FLUSH, null);
+
+        if (mPlayTTS) {
+            if (mTTSInit) {
+                String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
+                mTTS.setSpeechRate(0.7f);
+
+                //to get a call back from TTS we mst supply a KEY_PARAM_UTTERANCE_ID
+                HashMap<String, String> ttsHashMap = new HashMap<>();
+                ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_NOTIFICATION));
+                ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
+                mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, ttsHashMap);
+            }
+        } else if (mPlayGemChime) {
+            playChimeSound();
+        }
+    }
+
+    private void playChimeSound() {
+        if (mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) {
+            MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.chime);
+            mediaPlayer.start();
         }
     }
 
