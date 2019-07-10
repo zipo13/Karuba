@@ -69,11 +69,60 @@ public class MainActivity extends AppCompatActivity {
 
         mGameBoardImageView.post(this::loadInitialImages);
 
+        initTTS();
+        mNewTileButton.setOnClickListener(view -> {
+            Log.d(TAG, "onClick: User clicked on new tile button");
+            newTileButtonClicked();
+        });
+        prepareCamDistanceForFlipAffect();
+    }
+
+    private void newTileButtonClicked() {
+        //check if there are more tiles to draw
+        if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
+            Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
+            if (!mLastTile)
+                mLastTile = true;
+            else
+                return;
+        }
+        //to prevent fast clicks before the animation is over disable the button
+        mNewTileButton.setEnabled(false);
+
+        //duplicate the last tile
+        if (!mFirstTile) {
+            ImageView newView = duplicateView(mNewTileButton);
+            //the animation needs to be postponed because we need to wait fot the
+            //duplicated tile to generated first
+            final Handler handler = new Handler();
+            handler.postDelayed(() ->
+                    slideTileToBoard(newView), 150);
+        }
+        mFirstTile = false;
+
+        //if this was the last tile replace the tile with empty tile
+        if (mLastTile) {
+            mNewTileButton.setTag(null);
+            Glide
+                    .with(this)
+                    .load(R.drawable.empty_tile)
+                    .into(mNewTileButton);
+        } else {
+            mNewTileButton.setImageResource(R.drawable.tile_back);
+            startFlipAnimation(getNewRandomTileID());
+        }
+    }
+
+    private void initTTS() {
+        //assume the worst
         mTTSInit = false;
+
+        //create a TTS and do not use it until you get a confirmation that the init process went well
         mTTS = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
+                    //use English - not sure about other languages at the moment.
                     int result = mTTS.setLanguage(Locale.ENGLISH);
 
                     if (result == TextToSpeech.LANG_MISSING_DATA
@@ -81,6 +130,9 @@ public class MainActivity extends AppCompatActivity {
                         Log.e("TTS", "Language not supported");
                     } else {
                         Log.d(TAG, "onInit: SUCCESS");
+                        //Init went fine.
+                        //Set a listener when the TTS message finish as we sometime want
+                        //to chime if a tile with a gem was produced.
                         mTTSInit = true;
                         mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                             @Override
@@ -105,48 +157,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-
-        mNewTileButton.setOnClickListener(view -> {
-            Log.d(TAG, "onClick: User clicked on new tile button");
-
-
-            //check if there are more tiles to draw
-            if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
-                Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
-                if (!mLastTile)
-                    mLastTile = true;
-                else
-                    return;
-            }
-            //to prevent fast clicks before the animation is over disable the button
-            mNewTileButton.setEnabled(false);
-
-            //duplicate the last tile
-            if (!mFirstTile) {
-                ImageView newView = duplicateView(mNewTileButton);
-                //the animation needs to be postponed because we need to wait fot the
-                //duplicated tile to generated first
-                final Handler handler = new Handler();
-                handler.postDelayed(() ->
-                        slideTileToBoard(newView), 150);
-            }
-            mFirstTile = false;
-
-            //if this was the last tile replace the tile with empty tile
-            if (mLastTile) {
-                mNewTileButton.setTag(null);
-                Glide
-                        .with(this)
-                        .load(R.drawable.empty_tile)
-                        .into(mNewTileButton);
-            } else {
-                mNewTileButton.setImageResource(R.drawable.tile_back);
-                startFlipAnimation(getNewRandomTileID());
-            }
-        });
-
-        prepareCamDistanceForFlipAffect();
     }
 
     //this code is for the flip affect
