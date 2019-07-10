@@ -3,6 +3,8 @@ package il.co.woo.karuba;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
@@ -22,6 +24,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.Glide;
 
@@ -32,7 +35,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity {
-
 
     private static final int NUMBER_OF_TILE_ROWS = 6;
     private static final int NUMBER_OF_TILE_COLUMNS = 6;
@@ -49,14 +51,11 @@ public class MainActivity extends AppCompatActivity {
     private TextToSpeech mTTS;
     private boolean mTTSInit;
 
-    private boolean mPlayTTS = true;
-    private boolean mPlayGemChime = true;
-
-
-
     @BindView(R.id.new_tile) ImageButton mNewTileButton;
     @BindView(R.id.game_board) ImageView mGameBoardImageView;
     @BindView(R.id.main_layout) ConstraintLayout mMainLayout;
+    @BindView(R.id.settings_button) ImageButton mSettingsButton;
+    @BindView(R.id.reset_button) ImageButton mResetButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,10 +73,22 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onClick: User clicked on new tile button");
             newTileButtonClicked();
         });
+
+        mSettingsButton.setOnClickListener( view -> {
+            Log.d(TAG, "onCreate: User Clicked on Settings button");
+            settingsButtonClicked();
+        });
         prepareCamDistanceForFlipAffect();
     }
 
+    private void settingsButtonClicked() {
+        Log.d(TAG, "settingsButtonClicked: Enter");
+        Intent karubaSettingsActivity = new Intent(this, KarubaPrefActivity.class);
+        startActivity(karubaSettingsActivity);
+    }
+
     private void newTileButtonClicked() {
+        Log.d(TAG, "newTileButtonClicked: Enter");
         //check if there are more tiles to draw
         if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
             Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
@@ -114,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initTTS() {
+        Log.d(TAG, "initTTS: Enter");
         //assume the worst
         mTTSInit = false;
 
@@ -141,9 +153,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onDone(String utteranceId) {
                                 Log.d(TAG, "onDone: TTS: " + utteranceId);
-                                if (mPlayGemChime) {
-                                    playChimeSound();
-                                }
+                                playChimeSound();
                             }
 
                             @Override
@@ -312,10 +322,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void allAnimationEnd() {
+        Log.d(TAG, "allAnimationEnd: Enter");
+
         //re enable the button
         mNewTileButton.setEnabled(true);
 
-        if (mPlayTTS) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean readOutLoud = preferences.getBoolean(getString(R.string.pref_key_declare_tile_out_loud),
+                getResources().getBoolean(R.bool.declare_tile_name_out_loud));
+
+        if (readOutLoud) {
             if (mTTSInit) {
                 String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
                 mTTS.setSpeechRate(0.7f);
@@ -326,13 +342,18 @@ public class MainActivity extends AppCompatActivity {
                 ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
                 mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, ttsHashMap);
             }
-        } else if (mPlayGemChime) {
+        } else {
             playChimeSound();
         }
     }
 
     private void playChimeSound() {
-        if (mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) {
+        Log.d(TAG, "playChimeSound: Enter");
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean playChime = preferences.getBoolean(getString(R.string.pref_key_chime_on_gem),
+                getResources().getBoolean(R.bool.chime_on_gem));
+
+        if ((mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) && (playChime))  {
             MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.chime);
             mediaPlayer.start();
         }
@@ -340,6 +361,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        Log.d(TAG, "onDestroy: Enter");
+
         if (mTTS != null) {
             mTTS.stop();
             mTTS.shutdown();

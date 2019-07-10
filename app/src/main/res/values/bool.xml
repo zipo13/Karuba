@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="declare_tile_name_out_loud">true</bool>
+    <bool name="chime_on_gem">true</bool>
+</resources>

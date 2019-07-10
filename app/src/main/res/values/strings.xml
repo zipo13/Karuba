@@ -3,4 +3,16 @@
     <string name="pick_tile_from_stack">Press here to flip a tile from the stack</string>
     <string name="no_more_tiles">No more tiles to draw</string>
     <string name="tile">Tile</string>
+    <string name="title_activity_karuba_pref">Settings</string>
+    <string name="start_new_game">Start a new game</string>
+    <string name="app_settings">Application Settings</string>
+
+    <string name="pref_key_declare_tile_out_loud" translatable="false">key_tile_out_loud</string>
+    <string name="stay_silent">Stay silent</string>
+    <string name="speak">Speak</string>
+    <string name="declare_tile_out_loud_title">Declare new tile number out loud</string>
+
+    <string name="pref_key_chime_on_gem" translatable="false">key_chime</string>
+    <string name="chime">Chime</string>
+    <string name="chime_on_gem">Chime for a tile with a gem</string>
 </resources>
