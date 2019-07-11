@@ -14,4 +14,10 @@
         <item name="windowActionBar">false</item>
     </style>
 
+    <style name="GreenText" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+
 </resources>

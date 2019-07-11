@@ -15,5 +15,8 @@
     <string name="pref_key_chime_on_gem" translatable="false">key_chime</string>
     <string name="chime">Chime</string>
     <string name="chime_on_gem">Chime for a tile with a gem</string>
+    <string name="icons_by">Icons by Icons8</string>
+    <string name="credits">Credits:</string>
+    <string name="haba">Karuba is a wonderful game by HABA.\nThe author of this app is not affiliated with HABA in any way.\nThe app was created as an aid to the game and cannot replace the game itself.</string>
 
 </resources>
