@@ -18,5 +18,8 @@
     <string name="icons_by">Icons by Icons8</string>
     <string name="credits">Credits:</string>
     <string name="haba">Karuba is a wonderful game by HABA.\nThe author of this app is not affiliated with HABA in any way.\nThe app was created as an aid to the game and cannot replace the game itself.</string>
+    <string name="start_new_game_question">Do you want to start a new game?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 
 </resources>

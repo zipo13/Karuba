@@ -3,6 +3,7 @@ package il.co.woo.karuba;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -22,7 +23,9 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.preference.PreferenceManager;
@@ -77,8 +80,34 @@ public class MainActivity extends AppCompatActivity {
         });
 
         mSettingsButton.setOnClickListener( view -> {
-            Log.d(TAG, "onCreate: User Clicked on Settings button");
+            Log.d(TAG, "onCreate: User clicked on Settings button");
             settingsButtonClicked();
+        });
+
+        mResetButton.setOnClickListener(view -> {
+            Log.d(TAG, "onCreate: User clicked on the reset button");
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AlertDialogTheme));
+            builder.setMessage(getResources().getString(R.string.start_new_game_question))
+                    .setPositiveButton(getResources().getString(R.string.yes), (dialog, which) -> {
+                        //clear the data
+                        mViewModel.newGame();
+
+                        //clear the board
+                        ViewGroup parent = findViewById(android.R.id.content);
+                        for (int i= 0 ; i < mNumberOfMovedTiles; i++) {
+                            ImageView tile = findViewById(NEW_IMAGE_VIEW_ID + i);
+                            if (tile != null) {
+                                parent.removeView(tile);
+                            }
+                        }
+
+                        mNewTileButton.setImageResource(R.drawable.tile_back);
+                        mNumberOfMovedTiles = 0;
+                    })
+                    .setNegativeButton(getResources().getString(R.string.no), null)
+                    .show();
+
         });
         prepareCamDistanceForFlipAffect();
     }

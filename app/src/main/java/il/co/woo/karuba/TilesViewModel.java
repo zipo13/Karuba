@@ -73,7 +73,11 @@ class TilesViewModel extends AndroidViewModel {
                     }
                 }
             }
-            mLastSelectedRandom = mUsedTileArray.get(mUsedTileArray.size()-1);
+            if (mUsedTileArray.size() > 0)
+                mLastSelectedRandom = mUsedTileArray.get(mUsedTileArray.size()-1);
+            else
+                mLastSelectedRandom = 0;
+
             Log.d(TAG, "loadDataFromStorage: Loading data was successful");
 
         } catch(JSONException ex) {
@@ -97,7 +101,7 @@ class TilesViewModel extends AndroidViewModel {
         }
     }
 
-    public void newGame() {
+    void newGame() {
         Log.d(TAG, "newGame: Enter");
         initTiles();
         saveStateParams();
