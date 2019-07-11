@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -28,6 +29,7 @@ import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.Glide;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -38,15 +40,13 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int NUMBER_OF_TILE_ROWS = 6;
     private static final int NUMBER_OF_TILE_COLUMNS = 6;
-    public static final int NEW_IMAGE_VIEW_ID = 25879;
+    private static final int NEW_IMAGE_VIEW_ID = 25879;
 
     private static final String TILE_IMG_NAME_PREFIX = "tile_";
     private static final String DRAWABLE_TYPE = "drawable";
     private static final String TAG = "MainActivity";
-    private boolean mFirstTile = true;
-    private boolean mLastTile = false;
     private TilesViewModel mViewModel;
-    private int mNumberOfMovedTiles = 0;
+    private int mNumberOfMovedTiles;
 
     private TextToSpeech mTTS;
     private boolean mTTSInit;
@@ -64,8 +64,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        mNumberOfMovedTiles = 0;
         mViewModel = ViewModelProviders.of(this).get(TilesViewModel.class);
-
+        //we defer this action because during OnCreate the final size of the image is no known yet
+        //and so we don't know how to scale the image yet
         mGameBoardImageView.post(this::loadInitialImages);
 
         initTTS();
@@ -90,18 +92,14 @@ public class MainActivity extends AppCompatActivity {
     private void newTileButtonClicked() {
         Log.d(TAG, "newTileButtonClicked: Enter");
         //check if there are more tiles to draw
-        if (mViewModel.getNumberOfSelectedTiles() == TilesViewModel.NUMBER_OF_TILES) {
-            Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
-            if (!mLastTile)
-                mLastTile = true;
-            else
-                return;
-        }
+        boolean thisIsTheLastTile = mViewModel.getNumberOfTilesLeft() <= 0;
         //to prevent fast clicks before the animation is over disable the button
         mNewTileButton.setEnabled(false);
 
-        //duplicate the last tile
-        if (!mFirstTile) {
+        //duplicate the last tile if its not the first tile
+        //and if not all the tiles were already moved
+        if ((mViewModel.getNumberOfTilesLeft() != TilesViewModel.NUMBER_OF_TILES) &&
+                (mNumberOfMovedTiles != TilesViewModel.NUMBER_OF_TILES)){
             ImageView newView = duplicateView(mNewTileButton);
             //the animation needs to be postponed because we need to wait fot the
             //duplicated tile to generated first
@@ -109,10 +107,10 @@ public class MainActivity extends AppCompatActivity {
             handler.postDelayed(() ->
                     slideTileToBoard(newView), 150);
         }
-        mFirstTile = false;
 
         //if this was the last tile replace the tile with empty tile
-        if (mLastTile) {
+        if (thisIsTheLastTile) {
+            Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
             mNewTileButton.setTag(null);
             Glide
                     .with(this)
@@ -120,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
                     .into(mNewTileButton);
         } else {
             mNewTileButton.setImageResource(R.drawable.tile_back);
-            startFlipAnimation(getNewRandomTileID());
+            startFlipAnimation(getNewRandomTileResID());
         }
     }
 
@@ -130,41 +128,38 @@ public class MainActivity extends AppCompatActivity {
         mTTSInit = false;
 
         //create a TTS and do not use it until you get a confirmation that the init process went well
-        mTTS = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS) {
-                    //use English - not sure about other languages at the moment.
-                    int result = mTTS.setLanguage(Locale.ENGLISH);
+        mTTS = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                //use English - not sure about other languages at the moment.
+                int result = mTTS.setLanguage(Locale.ENGLISH);
 
-                    if (result == TextToSpeech.LANG_MISSING_DATA
-                            || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        Log.e("TTS", "Language not supported");
-                    } else {
-                        Log.d(TAG, "onInit: SUCCESS");
-                        //Init went fine.
-                        //Set a listener when the TTS message finish as we sometime want
-                        //to chime if a tile with a gem was produced.
-                        mTTSInit = true;
-                        mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                            @Override
-                            public void onStart(String utteranceId) {}
-
-                            @Override
-                            public void onDone(String utteranceId) {
-                                Log.d(TAG, "onDone: TTS: " + utteranceId);
-                                playChimeSound();
-                            }
-
-                            @Override
-                            public void onError(String utteranceId) {
-                                Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
-                            }
-                        });
-                    }
+                if (result == TextToSpeech.LANG_MISSING_DATA
+                        || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e("TTS", "Language not supported");
                 } else {
-                    Log.e("TTS", "Initialization failed");
+                    Log.d(TAG, "onInit: SUCCESS");
+                    //Init went fine.
+                    //Set a listener when the TTS message finish as we sometime want
+                    //to chime if a tile with a gem was produced.
+                    mTTSInit = true;
+                    mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        @Override
+                        public void onStart(String utteranceId) {}
+
+                        @Override
+                        public void onDone(String utteranceId) {
+                            Log.d(TAG, "onDone: TTS: " + utteranceId);
+                            playChimeSound();
+                        }
+
+                        @Override
+                        public void onError(String utteranceId) {
+                            Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
+                        }
+                    });
                 }
+            } else {
+                Log.e("TTS", "Initialization failed");
             }
         });
     }
@@ -190,6 +185,52 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bMapScaled = Bitmap.createScaledBitmap(bMap, mMainLayout.getWidth(), mMainLayout.getHeight(), true);
         mMainLayout.setBackground(new BitmapDrawable(getResources(),bMapScaled));
 
+        //check with the view model to see if this is a new game or is there save data already
+        ArrayList<Integer> usedTilesArray = mViewModel.getExistingTiles();
+        if (usedTilesArray.size() == 0)
+            return;
+
+        //start drawing the existing tiles one by one
+        for (int i = 0; i < usedTilesArray.size(); i++) {
+            //if this is the last tile we want to draw it on the stack and not on the board
+            if (i+1 == usedTilesArray.size()) {
+                int tileResId = getTileResIDFromTileIdx(usedTilesArray.get(i));
+                mNewTileButton.setTag(tileResId);
+                scaleResIntoImageView(mNewTileButton.getWidth(),mNewTileButton.getHeight(),tileResId,mNewTileButton);
+            }
+            else {
+                drawTileOnBoard(i, usedTilesArray.get(i));
+            }
+        }
+
+    }
+
+    //Draw a tile directly on the board
+    //the tile number will determine the tile location on the board as they are drawn one after another
+    //the tile Idx is the number on the tile picture to know which tile image to draw
+    private void drawTileOnBoard(int tileNumber,int tileIdx) {
+        Rect tilePlacement = calculateTilePlacement(tileNumber);
+
+        ImageView newImageView = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
+        //generate a new unique ID
+        newImageView.setId(NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles);
+        mNumberOfMovedTiles++;
+
+        //put it exactly over the old tile
+        newImageView.setX(tilePlacement.left);
+        newImageView.setY(tilePlacement.top);
+
+        //get the image of the last tile and put it in the new tile
+        int tileResID = getTileResIDFromTileIdx(tileIdx);
+        scaleResIntoImageView(tilePlacement.width(),tilePlacement.height(),tileResID,newImageView);
+        //the width and height should also be exactly the same
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(tilePlacement.width(), tilePlacement.height());
+        newImageView.setLayoutParams(layoutParams);
+        //add it to the view group
+        ViewGroup view = findViewById(android.R.id.content);
+        view.addView(newImageView);
+        //make sure its the top most - not sure if its needed
+        newImageView.bringToFront();
     }
 
 
@@ -219,24 +260,23 @@ public class MainActivity extends AppCompatActivity {
         return newImageView;
     }
 
-    private int getNewRandomTileID() {
-        Log.d(TAG, "getNewRandomTileID: Enter");
+    private int getNewRandomTileResID() {
+        Log.d(TAG, "getNewRandomTileResID: Enter");
         int random = mViewModel.getRandomTile();
         if (random == 0)
             return 0;
+        return getTileResIDFromTileIdx(random);
+    }
+
+    private int getTileResIDFromTileIdx(int tileIdx) {
         //Generate the resource name
-        String tileFileName = TILE_IMG_NAME_PREFIX + random;
+        String tileFileName = TILE_IMG_NAME_PREFIX + tileIdx;
 
         //locate the id
         return getResources().getIdentifier(tileFileName, DRAWABLE_TYPE,getPackageName());
     }
 
-    private void slideTileToBoard(ImageView imageView) {
-        Log.d(TAG, "slideTileToBoard: Enter");
-        //check that we did not get garbage
-        if (imageView == null)
-            return;
-
+    private Rect calculateTilePlacement(int tileIdx) {
         //get the dimensions and location of the board
         float gameBoardXCord = mGameBoardImageView.getX();
         float gameBoardYCord = mGameBoardImageView.getY();
@@ -248,15 +288,26 @@ public class MainActivity extends AppCompatActivity {
         int tileHeight = gameBoardHeight/NUMBER_OF_TILE_ROWS;
 
         //calc the location of the tile (row,col)
-        int row = mNumberOfMovedTiles / NUMBER_OF_TILE_ROWS;
-        int col = mNumberOfMovedTiles % NUMBER_OF_TILE_COLUMNS;
+        int row = tileIdx / NUMBER_OF_TILE_ROWS;
+        int col = tileIdx % NUMBER_OF_TILE_COLUMNS;
         //now calc the exact x,y of the tile
-        float finalX = col*tileWidth + gameBoardXCord;
-        float finalY = row*tileHeight + gameBoardYCord;
+        int finalX = Math.round(col*tileWidth + gameBoardXCord);
+        int finalY = Math.round(row*tileHeight + gameBoardYCord);
+
+        return new Rect(finalX,finalY,finalX+tileWidth,finalY+tileHeight);
+    }
+
+    private void slideTileToBoard(ImageView imageView) {
+        Log.d(TAG, "slideTileToBoard: Enter");
+        //check that we did not get garbage
+        if (imageView == null)
+            return;
+
+        Rect tilePlacement = calculateTilePlacement(mNumberOfMovedTiles);
 
         //calc the scale factor for X and Y
-        float scaleX = tileWidth/(float)imageView.getWidth();
-        float scaleY = tileHeight/(float)imageView.getHeight();
+        float scaleX = tilePlacement.width()/(float)imageView.getWidth();
+        float scaleY = tilePlacement.height()/(float)imageView.getHeight();
 
         //create the animation
         imageView.setPivotX(0);
@@ -264,8 +315,8 @@ public class MainActivity extends AppCompatActivity {
         imageView.animate()
                 .scaleX(scaleX)
                 .scaleY(scaleY)
-                .x(finalX)
-                .y(finalY)
+                .x(tilePlacement.left)
+                .y(tilePlacement.top)
                 .setListener(new AnimatorListenerAdapter()  {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -285,6 +336,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //this method is used to take a resource image and scale it to the needed size on the device
     private void scaleResIntoImageView(int reqWidth, int reqHeight, int resID, ImageView imageView) {
         Log.d(TAG, "scaleResIntoImageView: Enter");
         Bitmap bMap = BitmapFactory.decodeResource(getResources(), resID);
@@ -294,18 +346,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void startFlipAnimation(int newTileResID) {
+    //flip card animation when the user clicks on a tile
+    private void startFlipAnimation(int newTileResID) {
         Log.d(TAG, "startFlipAnimation: Enter");
         //flip animation is made of 2 parts
-        //1. flip the imageview half way (90 deg)
+        //1. flip the ImageView half way (90 deg)
         //2. replace the image
-        //3. flip the imageview back (-90 deg)
+        //3. flip the ImageView back (-90 deg)
         mNewTileButton.animate()
                 //flip it half way
                 .setStartDelay(300)
                 .withLayer()
                 .rotationY(90)
-                .setDuration(350)
+                .setDuration(300)
                 .withEndAction(() -> {
                     //replace the image
                     scaleResIntoImageView(mNewTileButton.getWidth(),mNewTileButton.getHeight(),newTileResID,mNewTileButton);
@@ -315,12 +368,14 @@ public class MainActivity extends AppCompatActivity {
                     mNewTileButton.animate()
                             .withLayer()
                             .rotationY(0)
-                            .setDuration(350)
+                            .setDuration(300)
                             .withEndAction(this::allAnimationEnd)
                             .start();
                 });
     }
 
+    //when all the animation ends we have some action that need to be done
+    //play sounds
     private void allAnimationEnd() {
         Log.d(TAG, "allAnimationEnd: Enter");
 
@@ -359,6 +414,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Text To Speech needs to be released before the app closes
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: Enter");
@@ -367,7 +423,6 @@ public class MainActivity extends AppCompatActivity {
             mTTS.stop();
             mTTS.shutdown();
         }
-
         super.onDestroy();
     }
 }

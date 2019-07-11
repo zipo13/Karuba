@@ -15,4 +15,5 @@
     <string name="pref_key_chime_on_gem" translatable="false">key_chime</string>
     <string name="chime">Chime</string>
     <string name="chime_on_gem">Chime for a tile with a gem</string>
+
 </resources>
