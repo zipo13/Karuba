@@ -141,6 +141,7 @@ class TilesViewModel extends AndroidViewModel {
 
 
     int getLastSelectedTile() {
+        Log.d(TAG, "getLastSelectedTile: Last selected tile is: " + mLastSelectedRandom);
         return mLastSelectedRandom;
     }
 

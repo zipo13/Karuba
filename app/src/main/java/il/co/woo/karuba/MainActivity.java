@@ -408,9 +408,6 @@ public class MainActivity extends AppCompatActivity {
     private void allAnimationEnd() {
         Log.d(TAG, "allAnimationEnd: Enter");
 
-        //re enable the button
-        mNewTileButton.setEnabled(true);
-
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         boolean readOutLoud = preferences.getBoolean(getString(R.string.pref_key_declare_tile_out_loud),
                 getResources().getBoolean(R.bool.declare_tile_name_out_loud));
@@ -438,9 +435,13 @@ public class MainActivity extends AppCompatActivity {
                 getResources().getBoolean(R.bool.chime_on_gem));
 
         if ((mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) && (playChime))  {
+            Log.d(TAG, "playChimeSound: Playing chime");
             MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.chime);
             mediaPlayer.start();
         }
+
+        //Trying to play the chime is the last action so the button can be re enabled
+        mNewTileButton.setEnabled(true);
     }
 
     //Text To Speech needs to be released before the app closes
