@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
 
                         //clear the board
                         ViewGroup parent = findViewById(android.R.id.content);
-                        for (int i= 0 ; i < mNumberOfMovedTiles; i++) {
+                        for (int i= mNumberOfMovedTiles ; i >= 0; i--) {
                             ImageView tile = findViewById(NEW_IMAGE_VIEW_ID + i);
                             if (tile != null) {
                                 parent.removeView(tile);
@@ -462,7 +462,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Trying to play the chime is the last action so the button can be re enabled
-        mNewTileButton.setEnabled(true);
+        runOnUiThread(()-> mNewTileButton.setEnabled(true));
+
     }
 
     //Text To Speech needs to be released before the app closes
