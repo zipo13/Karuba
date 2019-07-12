@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
                         mNewTileButton.setImageResource(R.drawable.tile_back);
                         mNumberOfMovedTiles = 0;
+                        mNewTileButton.setEnabled(true);
                     })
                     .setNegativeButton(getResources().getString(R.string.no), null)
                     .show();
