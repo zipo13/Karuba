@@ -3,13 +3,11 @@ package il.co.woo.karuba;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -44,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int NUMBER_OF_TILE_ROWS = 6;
     private static final int NUMBER_OF_TILE_COLUMNS = 6;
     private static final int NEW_IMAGE_VIEW_ID = 25879;
+    private static final int NEW_BACKGROUND_ID = 25979;
 
     private static final String TILE_IMG_NAME_PREFIX = "tile_";
     private static final String DRAWABLE_TYPE = "drawable";
@@ -194,6 +193,24 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
+    //a helper function to create images and set a scaled image in them
+    private ImageView createImageView(int newID,int x, int y, int width, int height, int resID) {
+        //inflate an image view
+        @SuppressLint("InflateParams") ImageView iv = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
+        //generate a new unique ID
+        iv.setId(newID);
+
+        iv.setX(x);
+        iv.setY(y);
+        scaleResIntoImageView(width,height,resID,iv);
+
+        //the width and height should also be exactly the same
+        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(width, height);
+        iv.setLayoutParams(layoutParams);
+        return iv;
+
+    }
     //this code is for the flip affect
     //if the camera is too close in some cases the flip will cut because its too close to the
     //screen
@@ -211,9 +228,16 @@ public class MainActivity extends AppCompatActivity {
                 .centerCrop()
                 .into(mGameBoardImageView);
 
-        Bitmap bMap = BitmapFactory.decodeResource(getResources(), R.drawable.jungle);
-        Bitmap bMapScaled = Bitmap.createScaledBitmap(bMap, mMainLayout.getWidth(), mMainLayout.getHeight(), true);
-        mMainLayout.setBackground(new BitmapDrawable(getResources(),bMapScaled));
+        ImageView background = createImageView(NEW_BACKGROUND_ID,
+                0,
+                mGameBoardImageView.getHeight(),
+                mGameBoardImageView.getWidth(),
+                Math.round(mMainLayout.getHeight()-mGameBoardImageView.getHeight()),
+                R.drawable.jungle);
+
+        //add it to the view group
+        ViewGroup view = findViewById(android.R.id.content);
+        view.addView(background,0);
 
         //check with the view model to see if this is a new game or is there save data already
         ArrayList<Integer> usedTilesArray = mViewModel.getExistingTiles();
@@ -230,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
             }
             else {
                 drawTileOnBoard(i, usedTilesArray.get(i));
+                mNumberOfMovedTiles++;
             }
         }
 
@@ -240,22 +265,19 @@ public class MainActivity extends AppCompatActivity {
     //the tile Idx is the number on the tile picture to know which tile image to draw
     private void drawTileOnBoard(int tileNumber,int tileIdx) {
         Rect tilePlacement = calculateTilePlacement(tileNumber);
-
-        ImageView newImageView = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
-        //generate a new unique ID
-        newImageView.setId(NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles);
-        mNumberOfMovedTiles++;
-
-        //put it exactly over the old tile
-        newImageView.setX(tilePlacement.left);
-        newImageView.setY(tilePlacement.top);
-
         //get the image of the last tile and put it in the new tile
         int tileResID = getTileResIDFromTileIdx(tileIdx);
-        scaleResIntoImageView(tilePlacement.width(),tilePlacement.height(),tileResID,newImageView);
-        //the width and height should also be exactly the same
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(tilePlacement.width(), tilePlacement.height());
-        newImageView.setLayoutParams(layoutParams);
+        //generate a new unique ID
+        int newID = NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles;
+
+        //put it exactly over the old tile
+        ImageView newImageView = createImageView(newID,
+                tilePlacement.left,
+                tilePlacement.top,
+                tilePlacement.width(),
+                tilePlacement.height(),
+                tileResID);
+
         //add it to the view group
         ViewGroup view = findViewById(android.R.id.content);
         view.addView(newImageView);
@@ -267,21 +289,19 @@ public class MainActivity extends AppCompatActivity {
     private ImageView duplicateView(ImageView imageView) {
         Log.d(TAG, "duplicateView: Enter");
         //inflate a new tile from the layout
-        @SuppressLint("InflateParams")
-        ImageView newImageView = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
         //generate a new unique ID
-        newImageView.setId(NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles);
-        newImageView.setTag(imageView.getTag());
+        int newId = NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles;
 
         //put it exactly over the old tile
-        newImageView.setX(imageView.getX());
-        newImageView.setY(imageView.getY());
+        ImageView newImageView = createImageView(newId,
+                Math.round(imageView.getX()),
+                Math.round(imageView.getY()),
+                imageView.getWidth(),
+                imageView.getHeight(),
+                (int)imageView.getTag());
 
-        //get the image of the last tile and put it in the new tile
-        newImageView.setImageDrawable(imageView.getDrawable());
-        //the width and height should also be exactly the same
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(imageView.getWidth(), imageView.getHeight());
-        newImageView.setLayoutParams(layoutParams);
+        newImageView.setTag(imageView.getTag());
+
         //add it to the view group
         ViewGroup view = findViewById(android.R.id.content);
         view.addView(newImageView);

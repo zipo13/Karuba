@@ -21,5 +21,6 @@
     <string name="start_new_game_question">Do you want to start a new game?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="background_image_by">Background image by Vecteezy.com</string>
 
 </resources>
