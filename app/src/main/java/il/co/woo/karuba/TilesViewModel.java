@@ -12,7 +12,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Random;
 
-class TilesViewModel extends AndroidViewModel {
+public class TilesViewModel extends AndroidViewModel {
     static final int NUMBER_OF_TILES = 36;
     private static final String KEY_USED_TILES_ARRAY = "key_used_tiles_arr";
     private static final String KEY_AVAIL_TILES_ARRAY = "key_avail_tiles_arr";
