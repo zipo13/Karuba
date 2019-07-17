@@ -37,8 +37,7 @@ public class TilesViewModel extends AndroidViewModel {
         initTiles();
         //if we failed to load saved data for some reason consider this is a new game
         if (!loadDataFromStorage()) {
-            mAvailTileArray.clear();
-            mUsedTileArray.clear();
+            newGame();
         }
     }
 
