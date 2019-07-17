@@ -29,7 +29,16 @@
         app:key="@string/pref_key_chime_on_gem"
         app:summaryOff="@string/stay_silent"
         app:summaryOn="@string/chime"
-        app:title="@string/chime_on_gem"
+        app:title="@string/chime_on_gem_title"
         app:iconSpaceReserved="false"/>
+
+    <SwitchPreferenceCompat
+        app:defaultValue="@bool/play_bg_music"
+        app:key="@string/pref_key_play_bg_music"
+        app:summaryOff="@string/stay_silent"
+        app:summaryOn="@string/bg_music"
+        app:title="@string/play_bg_music_title"
+        app:iconSpaceReserved="false"/>
+
 
 </androidx.preference.PreferenceScreen>

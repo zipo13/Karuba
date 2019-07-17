@@ -22,7 +22,7 @@
         android:layout_marginLeft="8dp"
         android:layout_marginBottom="8dp"
         android:text="@string/credits"
-        app:layout_constraintBottom_toTopOf="@+id/haba_txt"
+        app:layout_constraintBottom_toTopOf="@id/haba_txt"
         app:layout_constraintStart_toStartOf="parent"
         android:textStyle="bold"
         style="@style/GreenText"/>
@@ -35,7 +35,7 @@
         android:layout_marginLeft="8dp"
         android:layout_marginBottom="8dp"
         android:text="@string/haba"
-        app:layout_constraintBottom_toTopOf="@+id/icons_txt"
+        app:layout_constraintBottom_toTopOf="@id/icons_txt"
         app:layout_constraintStart_toStartOf="parent"
         style="@style/GreenText"/>
 
@@ -49,7 +49,7 @@
         android:layout_marginRight="8dp"
         android:layout_marginBottom="8dp"
         android:text="@string/icons_by"
-        app:layout_constraintBottom_toTopOf="@+id/bg_attribution_txt"
+        app:layout_constraintBottom_toTopOf="@id/bg_attribution_txt"
         app:layout_constraintStart_toStartOf="parent"
         style="@style/GreenText"/>
 
@@ -64,6 +64,21 @@
         android:layout_marginRight="8dp"
         android:layout_marginBottom="8dp"
         android:text="@string/background_image_by"
+        app:layout_constraintBottom_toTopOf="@id/music_attribution_txt"
+        app:layout_constraintStart_toStartOf="parent"
+        style="@style/GreenText"/>
+
+    <TextView
+        android:id="@+id/music_attribution_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/music_credit"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         style="@style/GreenText"/>

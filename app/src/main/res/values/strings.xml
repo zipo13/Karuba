@@ -14,7 +14,12 @@
 
     <string name="pref_key_chime_on_gem" translatable="false">key_chime</string>
     <string name="chime">Chime</string>
-    <string name="chime_on_gem">Chime for a tile with a gem</string>
+    <string name="chime_on_gem_title">Chime for a tile with a gem</string>
+
+    <string name="pref_key_play_bg_music" translatable="false">key_bg_music</string>
+    <string name="bg_music">Ambient music</string>
+    <string name="play_bg_music_title">Play background music</string>
+
     <string name="icons_by">Icons by Icons8</string>
     <string name="credits">Credits:</string>
     <string name="haba">Karuba is a wonderful game by HABA.\nThe author of this app is not affiliated with HABA in any way.\nThe app was created as an aid to the game and cannot replace the game itself.</string>
@@ -25,5 +30,6 @@
     <string name="TTS_missing_lang_error">Please note: Tile speech declaration will not work as the English language is missing or not supported on this device"</string>
     <string name="tile_tts_ready">Tile declaration is ready</string>
     <string name="tile_tts_not_ready">Tile declaration is not ready yet, loading speech engine...</string>
+    <string name="music_credit">Jungle music, Heart of the Jungle by Alexander Hoff, licensed under a Creative Commons Attribution 4 International License</string>
 
 </resources>

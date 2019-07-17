@@ -53,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TextToSpeech mTTS;
     private boolean mTTSInit = false;
+    private MediaPlayer chimePlayer;
+    private MediaPlayer mBGMusic;
 
     @BindView(R.id.new_tile) ImageButton mNewTileButton;
     @BindView(R.id.game_board) ImageView mGameBoardImageView;
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         mGameBoardImageView.post(this::loadInitialImages);
 
         initTTS();
+        startBGMusic();
         mNewTileButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on new tile button");
             newTileButtonClicked();
@@ -122,6 +125,24 @@ public class MainActivity extends AppCompatActivity {
 
         });
         prepareCamDistanceForFlipAffect();
+    }
+
+    //start the background music upon preferences check
+    private void startBGMusic() {
+        Log.d(TAG, "startBGMusic: Enter");
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean playBgMusic = preferences.getBoolean(getString(R.string.pref_key_play_bg_music),
+                getResources().getBoolean(R.bool.play_bg_music));
+
+        //if this is the first time that we play bg music create the player
+        if (playBgMusic) {
+            if (mBGMusic == null) {
+                mBGMusic = MediaPlayer.create(getApplicationContext(), R.raw.heart_of_the_jungle);
+                mBGMusic.setLooping(true);
+            }
+
+            mBGMusic.start();
+        }
     }
 
     private void settingsButtonClicked() {
@@ -180,51 +201,48 @@ public class MainActivity extends AppCompatActivity {
         mTTS = new TextToSpeech(this, status -> {
 
             //OnInit of TTS is run on the main thread and so is VERY slow
-            new Thread(new Runnable() {
-                public void run() {
-                    if (status == TextToSpeech.SUCCESS) {
-                        //use English - not sure about other languages at the moment.
-                        mTTS.setSpeechRate(0.7f);
-                        mTTS.setPitch(1.1f);
-                        int result = mTTS.setLanguage(Locale.US);
+            new Thread(() -> {
+                if (status == TextToSpeech.SUCCESS) {
+                    //use English - not sure about other languages at the moment.
+                    mTTS.setSpeechRate(0.7f);
+                    mTTS.setPitch(1.1f);
+                    int result = mTTS.setLanguage(Locale.US);
 
-                        if (result == TextToSpeech.LANG_MISSING_DATA
-                                || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            Log.e("TTS", "Language not supported");
+                    if (result == TextToSpeech.LANG_MISSING_DATA
+                            || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "Language not supported");
 
-                            //notify the user that TTS will not work on this device
-                            showToastOnUIThread(getResources().getString(R.string.TTS_missing_lang_error));
-                        } else {
-                            Log.d(TAG, "onInit: SUCCESS");
-                            //Init went fine.
-                            //Set a listener when the TTS message finish as we sometime want
-                            //to chime if a tile with a gem was produced.
-                            mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                                @Override
-                                public void onStart(String utteranceId) {
-                                }
-
-                                @Override
-                                public void onDone(String utteranceId) {
-                                    Log.d(TAG, "onDone: TTS: " + utteranceId);
-                                    playChimeSound();
-                                }
-
-                                @Override
-                                public void onError(String utteranceId) {
-                                    Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
-                                }
-                            });
-                            mTTSInit = true;
-                            runOnUiThread(() -> mTTSStatusButton.setVisibility(View.GONE));
-                        }
-                    } else {
-                        Log.e("TTS", "Initialization failed");
                         //notify the user that TTS will not work on this device
                         showToastOnUIThread(getResources().getString(R.string.TTS_missing_lang_error));
-                    }
-                }
+                    } else {
+                        Log.d(TAG, "onInit: SUCCESS");
+                        //Init went fine.
+                        //Set a listener when the TTS message finish as we sometime want
+                        //to chime if a tile with a gem was produced.
+                        mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            @Override
+                            public void onStart(String utteranceId) {
+                            }
 
+                            @Override
+                            public void onDone(String utteranceId) {
+                                Log.d(TAG, "onDone: TTS: " + utteranceId);
+                                playChimeSound();
+                            }
+
+                            @Override
+                            public void onError(String utteranceId) {
+                                Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
+                            }
+                        });
+                        mTTSInit = true;
+                        runOnUiThread(() -> mTTSStatusButton.setVisibility(View.GONE));
+                    }
+                } else {
+                    Log.e("TTS", "Initialization failed");
+                    //notify the user that TTS will not work on this device
+                    showToastOnUIThread(getResources().getString(R.string.TTS_missing_lang_error));
+                }
             }).start();
         });
     }
@@ -496,13 +514,39 @@ public class MainActivity extends AppCompatActivity {
 
         if ((mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) && (playChime))  {
             Log.d(TAG, "playChimeSound: Playing chime");
-            MediaPlayer mediaPlayer = MediaPlayer.create(this, R.raw.chime);
-            mediaPlayer.start();
+
+            //try to reuse the chime player or create one if needed
+            if (chimePlayer == null) {
+                Log.d(TAG, "playChimeSound: First chimePlayer created");
+                chimePlayer = MediaPlayer.create(this, R.raw.chime);
+            }
+            chimePlayer.start();
         }
 
         //Trying to play the chime is the last action so the button can be re enabled
         runOnUiThread(()-> mNewTileButton.setEnabled(true));
 
+    }
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        //if we are playing bg music pause it
+        if(mBGMusic != null) {
+            if(mBGMusic.isPlaying()) {
+                mBGMusic.pause();
+            }
+        }
+    }
+
+    //try to start the bg music if needed
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        startBGMusic();
     }
 
     //Text To Speech needs to be released before the app closes
@@ -514,6 +558,19 @@ public class MainActivity extends AppCompatActivity {
             mTTS.stop();
             mTTS.shutdown();
         }
+
+        if (chimePlayer != null) {
+            chimePlayer.reset();
+            chimePlayer.release();
+        }
+
+        if (mBGMusic != null) {
+            mBGMusic.reset();
+            mBGMusic.release();
+        }
+
         super.onDestroy();
+
+
     }
 }
