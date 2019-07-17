@@ -71,5 +71,16 @@
         app:srcCompat="@drawable/gear"
         android:contentDescription="@string/app_settings"/>
 
+    <ImageButton
+        android:id="@+id/tts_status_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:background="@null"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/game_board"
+        app:srcCompat="@drawable/talk_gear" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

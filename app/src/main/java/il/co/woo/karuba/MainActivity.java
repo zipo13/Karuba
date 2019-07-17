@@ -16,6 +16,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -51,13 +52,14 @@ public class MainActivity extends AppCompatActivity {
     private int mNumberOfMovedTiles;
 
     private TextToSpeech mTTS;
-    private boolean mTTSInit;
+    private boolean mTTSInit = false;
 
     @BindView(R.id.new_tile) ImageButton mNewTileButton;
     @BindView(R.id.game_board) ImageView mGameBoardImageView;
     @BindView(R.id.main_layout) ConstraintLayout mMainLayout;
     @BindView(R.id.settings_button) ImageButton mSettingsButton;
     @BindView(R.id.reset_button) ImageButton mResetButton;
+    @BindView(R.id.tts_status_button) ImageButton mTTSStatusButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,12 +81,22 @@ public class MainActivity extends AppCompatActivity {
         });
 
         mSettingsButton.setOnClickListener( view -> {
-            Log.d(TAG, "onCreate: User clicked on Settings button");
+            Log.d(TAG, "onClick: User clicked on Settings button");
             settingsButtonClicked();
         });
 
+        //TTS init is very slow and so
+        mTTSStatusButton.setOnClickListener(view -> {
+            Log.d(TAG, "onClick: User clicked on TTS status button");
+            if(mTTSInit) {
+                Toast.makeText(this, getResources().getString(R.string.tile_tts_ready), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getResources().getString(R.string.tile_tts_not_ready), Toast.LENGTH_SHORT).show();
+            }
+        });
+
         mResetButton.setOnClickListener(view -> {
-            Log.d(TAG, "onCreate: User clicked on the reset button");
+            Log.d(TAG, "onClick: User clicked on the reset button");
 
             AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AlertDialogTheme));
             builder.setMessage(getResources().getString(R.string.start_new_game_question))
@@ -129,12 +141,20 @@ public class MainActivity extends AppCompatActivity {
         //and if not all the tiles were already moved
         if ((mViewModel.getNumberOfTilesLeft() != TilesViewModel.NUMBER_OF_TILES) &&
                 (mNumberOfMovedTiles != TilesViewModel.NUMBER_OF_TILES)){
-            ImageView newView = duplicateView(mNewTileButton);
-            //the animation needs to be postponed because we need to wait fot the
-            //duplicated tile to generated first
-            final Handler handler = new Handler();
-            handler.postDelayed(() ->
-                    slideTileToBoard(newView), 150);
+
+            //this is not the first tile so there should be there a last tile in the view model
+            int lastTileResID = getTileResIDFromTileIdx(mViewModel.getLastSelectedTile());
+            if( lastTileResID > 0) {
+
+                ImageView newView = duplicateView(mNewTileButton,lastTileResID);
+                //the animation needs to be postponed because we need to wait for the
+                //duplicated tile to be generated first
+                final Handler handler = new Handler();
+                handler.postDelayed(() ->
+                        slideTileToBoard(newView), 150);
+            } else {
+                Log.e(TAG, "newTileButtonClicked: Could not duplicate last tile becuase the res id is not valid");
+            }
         }
 
         //if this was the last tile replace the tile with empty tile
@@ -158,39 +178,61 @@ public class MainActivity extends AppCompatActivity {
 
         //create a TTS and do not use it until you get a confirmation that the init process went well
         mTTS = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                //use English - not sure about other languages at the moment.
-                int result = mTTS.setLanguage(Locale.ENGLISH);
 
-                if (result == TextToSpeech.LANG_MISSING_DATA
-                        || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Log.e("TTS", "Language not supported");
-                } else {
-                    Log.d(TAG, "onInit: SUCCESS");
-                    //Init went fine.
-                    //Set a listener when the TTS message finish as we sometime want
-                    //to chime if a tile with a gem was produced.
-                    mTTSInit = true;
-                    mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                        @Override
-                        public void onStart(String utteranceId) {}
+            //OnInit of TTS is run on the main thread and so is VERY slow
+            new Thread(new Runnable() {
+                public void run() {
+                    if (status == TextToSpeech.SUCCESS) {
+                        //use English - not sure about other languages at the moment.
+                        mTTS.setSpeechRate(0.7f);
+                        mTTS.setPitch(1.1f);
+                        int result = mTTS.setLanguage(Locale.US);
 
-                        @Override
-                        public void onDone(String utteranceId) {
-                            Log.d(TAG, "onDone: TTS: " + utteranceId);
-                            playChimeSound();
+                        if (result == TextToSpeech.LANG_MISSING_DATA
+                                || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            Log.e("TTS", "Language not supported");
+
+                            //notify the user that TTS will not work on this device
+                            showToastOnUIThread(getResources().getString(R.string.TTS_missing_lang_error));
+                        } else {
+                            Log.d(TAG, "onInit: SUCCESS");
+                            //Init went fine.
+                            //Set a listener when the TTS message finish as we sometime want
+                            //to chime if a tile with a gem was produced.
+                            mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                                @Override
+                                public void onStart(String utteranceId) {
+                                }
+
+                                @Override
+                                public void onDone(String utteranceId) {
+                                    Log.d(TAG, "onDone: TTS: " + utteranceId);
+                                    playChimeSound();
+                                }
+
+                                @Override
+                                public void onError(String utteranceId) {
+                                    Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
+                                }
+                            });
+                            mTTSInit = true;
+                            runOnUiThread(() -> mTTSStatusButton.setVisibility(View.GONE));
                         }
-
-                        @Override
-                        public void onError(String utteranceId) {
-                            Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
-                        }
-                    });
+                    } else {
+                        Log.e("TTS", "Initialization failed");
+                        //notify the user that TTS will not work on this device
+                        showToastOnUIThread(getResources().getString(R.string.TTS_missing_lang_error));
+                    }
                 }
-            } else {
-                Log.e("TTS", "Initialization failed");
-            }
+
+            }).start();
         });
+    }
+
+    private void showToastOnUIThread(String msg) {
+        runOnUiThread(() -> Toast.makeText(getApplicationContext(),
+                msg,
+                Toast.LENGTH_LONG).show());
     }
 
 
@@ -286,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private ImageView duplicateView(ImageView imageView) {
+    private ImageView duplicateView(ImageView imageView,int newTileResID) {
         Log.d(TAG, "duplicateView: Enter");
         //inflate a new tile from the layout
         //generate a new unique ID
@@ -298,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
                 Math.round(imageView.getY()),
                 imageView.getWidth(),
                 imageView.getHeight(),
-                (int)imageView.getTag());
+                newTileResID);
 
         newImageView.setTag(imageView.getTag());
 
@@ -433,17 +475,14 @@ public class MainActivity extends AppCompatActivity {
         boolean readOutLoud = preferences.getBoolean(getString(R.string.pref_key_declare_tile_out_loud),
                 getResources().getBoolean(R.bool.declare_tile_name_out_loud));
 
-        if (readOutLoud) {
-            if (mTTSInit) {
-                String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
-                mTTS.setSpeechRate(0.7f);
+        if (readOutLoud && mTTSInit) {
+            String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
 
-                //to get a call back from TTS we mst supply a KEY_PARAM_UTTERANCE_ID
-                HashMap<String, String> ttsHashMap = new HashMap<>();
-                ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_NOTIFICATION));
-                ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
-                mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, ttsHashMap);
-            }
+            //to get a call back from TTS we mst supply a KEY_PARAM_UTTERANCE_ID
+            HashMap<String, String> ttsHashMap = new HashMap<>();
+            ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_NOTIFICATION));
+            ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
+            mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, ttsHashMap);
         } else {
             playChimeSound();
         }

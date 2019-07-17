@@ -22,5 +22,8 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="background_image_by">Background image by Vecteezy.com</string>
+    <string name="TTS_missing_lang_error">Please note: Tile speech declaration will not work as the English language is missing or not supported on this device"</string>
+    <string name="tile_tts_ready">Tile declaration is ready</string>
+    <string name="tile_tts_not_ready">Tile declaration is not ready yet, loading speech engine...</string>
 
 </resources>
