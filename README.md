@@ -1,4 +1,4 @@
-# Karuba
+# Karuba Tile Selector
 This is a helper app for the [Karuba](https://www.habausa.com/karuba-tile-laying-puzzle-game/) board game.
 
 It was made as part of my Android development learning path and demonstrates the basic use of Animation in Andrid apps.
