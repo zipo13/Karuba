@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -56,12 +55,18 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer chimePlayer;
     private MediaPlayer mBGMusic;
 
-    @BindView(R.id.new_tile) ImageButton mNewTileButton;
-    @BindView(R.id.game_board) ImageView mGameBoardImageView;
-    @BindView(R.id.main_layout) ConstraintLayout mMainLayout;
-    @BindView(R.id.settings_button) ImageButton mSettingsButton;
-    @BindView(R.id.reset_button) ImageButton mResetButton;
-    @BindView(R.id.tts_status_button) ImageButton mTTSStatusButton;
+    @BindView(R.id.new_tile)
+    ImageButton mNewTileButton;
+    @BindView(R.id.game_board)
+    ImageView mGameBoardImageView;
+    @BindView(R.id.main_layout)
+    ConstraintLayout mMainLayout;
+    @BindView(R.id.settings_button)
+    ImageButton mSettingsButton;
+    @BindView(R.id.reset_button)
+    ImageButton mResetButton;
+    @BindView(R.id.tts_status_button)
+    ImageButton mTTSStatusButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
             newTileButtonClicked();
         });
 
-        mSettingsButton.setOnClickListener( view -> {
+        mSettingsButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on Settings button");
             settingsButtonClicked();
         });
@@ -91,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         //TTS init is very slow and so
         mTTSStatusButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on TTS status button");
-            if(mTTSInit) {
+            if (mTTSInit) {
                 Toast.makeText(this, getResources().getString(R.string.tile_tts_ready), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, getResources().getString(R.string.tile_tts_not_ready), Toast.LENGTH_SHORT).show();
@@ -109,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
                         //clear the board
                         ViewGroup parent = findViewById(android.R.id.content);
-                        for (int i= mNumberOfMovedTiles ; i >= 0; i--) {
+                        for (int i = mNumberOfMovedTiles; i >= 0; i--) {
                             ImageView tile = findViewById(NEW_IMAGE_VIEW_ID + i);
                             if (tile != null) {
                                 parent.removeView(tile);
@@ -161,13 +166,13 @@ public class MainActivity extends AppCompatActivity {
         //duplicate the last tile if its not the first tile
         //and if not all the tiles were already moved
         if ((mViewModel.getNumberOfTilesLeft() != TilesViewModel.NUMBER_OF_TILES) &&
-                (mNumberOfMovedTiles != TilesViewModel.NUMBER_OF_TILES)){
+                (mNumberOfMovedTiles != TilesViewModel.NUMBER_OF_TILES)) {
 
             //this is not the first tile so there should be there a last tile in the view model
             int lastTileResID = getTileResIDFromTileIdx(mViewModel.getLastSelectedTile());
-            if( lastTileResID > 0) {
+            if (lastTileResID > 0) {
 
-                ImageView newView = duplicateView(mNewTileButton,lastTileResID);
+                ImageView newView = duplicateView(mNewTileButton, lastTileResID);
                 //the animation needs to be postponed because we need to wait for the
                 //duplicated tile to be generated first
                 final Handler handler = new Handler();
@@ -255,15 +260,15 @@ public class MainActivity extends AppCompatActivity {
 
 
     //a helper function to create images and set a scaled image in them
-    private ImageView createImageView(int newID,int x, int y, int width, int height, int resID) {
+    private ImageView createImageView(int newID, int x, int y, int width, int height, int resID) {
         //inflate an image view
-        @SuppressLint("InflateParams") ImageView iv = (ImageView)LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
+        @SuppressLint("InflateParams") ImageView iv = (ImageView) LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
         //generate a new unique ID
         iv.setId(newID);
 
         iv.setX(x);
         iv.setY(y);
-        scaleResIntoImageView(width,height,resID,iv);
+        scaleResIntoImageView(width, height, resID, iv);
 
         //the width and height should also be exactly the same
         ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(width, height);
@@ -271,13 +276,14 @@ public class MainActivity extends AppCompatActivity {
         return iv;
 
     }
+
     //this code is for the flip affect
     //if the camera is too close in some cases the flip will cut because its too close to the
     //screen
     private void prepareCamDistanceForFlipAffect() {
         Log.d(TAG, "prepareCamDistanceForFlipAffect: Enter");
         float scale = getApplicationContext().getResources().getDisplayMetrics().density;
-        float distance = mNewTileButton.getCameraDistance() * (scale );
+        float distance = mNewTileButton.getCameraDistance() * (scale);
         mNewTileButton.setCameraDistance(distance);
     }
 
@@ -292,12 +298,12 @@ public class MainActivity extends AppCompatActivity {
                 0,
                 mGameBoardImageView.getHeight(),
                 mGameBoardImageView.getWidth(),
-                Math.round(mMainLayout.getHeight()-mGameBoardImageView.getHeight()),
+                Math.round(mMainLayout.getHeight() - mGameBoardImageView.getHeight()),
                 R.drawable.jungle);
 
         //add it to the view group
         ViewGroup view = findViewById(android.R.id.content);
-        view.addView(background,0);
+        view.addView(background, 0);
 
         //check with the view model to see if this is a new game or is there save data already
         ArrayList<Integer> usedTilesArray = mViewModel.getExistingTiles();
@@ -307,12 +313,11 @@ public class MainActivity extends AppCompatActivity {
         //start drawing the existing tiles one by one
         for (int i = 0; i < usedTilesArray.size(); i++) {
             //if this is the last tile we want to draw it on the stack and not on the board
-            if (i+1 == usedTilesArray.size()) {
+            if (i + 1 == usedTilesArray.size()) {
                 int tileResId = getTileResIDFromTileIdx(usedTilesArray.get(i));
                 mNewTileButton.setTag(tileResId);
-                scaleResIntoImageView(mNewTileButton.getWidth(),mNewTileButton.getHeight(),tileResId,mNewTileButton);
-            }
-            else {
+                scaleResIntoImageView(mNewTileButton.getWidth(), mNewTileButton.getHeight(), tileResId, mNewTileButton);
+            } else {
                 drawTileOnBoard(i, usedTilesArray.get(i));
                 mNumberOfMovedTiles++;
             }
@@ -323,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
     //Draw a tile directly on the board
     //the tile number will determine the tile location on the board as they are drawn one after another
     //the tile Idx is the number on the tile picture to know which tile image to draw
-    private void drawTileOnBoard(int tileNumber,int tileIdx) {
+    private void drawTileOnBoard(int tileNumber, int tileIdx) {
         Rect tilePlacement = calculateTilePlacement(tileNumber);
         //get the image of the last tile and put it in the new tile
         int tileResID = getTileResIDFromTileIdx(tileIdx);
@@ -346,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private ImageView duplicateView(ImageView imageView,int newTileResID) {
+    private ImageView duplicateView(ImageView imageView, int newTileResID) {
         Log.d(TAG, "duplicateView: Enter");
         //inflate a new tile from the layout
         //generate a new unique ID
@@ -383,7 +388,7 @@ public class MainActivity extends AppCompatActivity {
         String tileFileName = TILE_IMG_NAME_PREFIX + tileIdx;
 
         //locate the id
-        return getResources().getIdentifier(tileFileName, DRAWABLE_TYPE,getPackageName());
+        return getResources().getIdentifier(tileFileName, DRAWABLE_TYPE, getPackageName());
     }
 
     private Rect calculateTilePlacement(int tileIdx) {
@@ -394,17 +399,17 @@ public class MainActivity extends AppCompatActivity {
         int gameBoardHeight = mGameBoardImageView.getHeight();
 
         //calc the final size of the tile on the board
-        int tileWidth = gameBoardWidth/NUMBER_OF_TILE_COLUMNS;
-        int tileHeight = gameBoardHeight/NUMBER_OF_TILE_ROWS;
+        int tileWidth = gameBoardWidth / NUMBER_OF_TILE_COLUMNS;
+        int tileHeight = gameBoardHeight / NUMBER_OF_TILE_ROWS;
 
         //calc the location of the tile (row,col)
         int row = tileIdx / NUMBER_OF_TILE_ROWS;
         int col = tileIdx % NUMBER_OF_TILE_COLUMNS;
         //now calc the exact x,y of the tile
-        int finalX = Math.round(col*tileWidth + gameBoardXCord);
-        int finalY = Math.round(row*tileHeight + gameBoardYCord);
+        int finalX = Math.round(col * tileWidth + gameBoardXCord);
+        int finalY = Math.round(row * tileHeight + gameBoardYCord);
 
-        return new Rect(finalX,finalY,finalX+tileWidth,finalY+tileHeight);
+        return new Rect(finalX, finalY, finalX + tileWidth, finalY + tileHeight);
     }
 
     private void slideTileToBoard(ImageView imageView) {
@@ -416,8 +421,8 @@ public class MainActivity extends AppCompatActivity {
         Rect tilePlacement = calculateTilePlacement(mNumberOfMovedTiles);
 
         //calc the scale factor for X and Y
-        float scaleX = tilePlacement.width()/(float)imageView.getWidth();
-        float scaleY = tilePlacement.height()/(float)imageView.getHeight();
+        float scaleX = tilePlacement.width() / (float) imageView.getWidth();
+        float scaleY = tilePlacement.height() / (float) imageView.getHeight();
 
         //create the animation
         imageView.setPivotX(0);
@@ -427,7 +432,7 @@ public class MainActivity extends AppCompatActivity {
                 .scaleY(scaleY)
                 .x(tilePlacement.left)
                 .y(tilePlacement.top)
-                .setListener(new AnimatorListenerAdapter()  {
+                .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
 
@@ -437,7 +442,7 @@ public class MainActivity extends AppCompatActivity {
 
                         //resmaple the bitmap to save memory
                         // Load a bitmap from the drawable folder
-                        int tag = (int)imageView.getTag();
+                        int tag = (int) imageView.getTag();
                         scaleResIntoImageView(reqWidth, reqHeight, tag, imageView);
                     }
 
@@ -471,7 +476,7 @@ public class MainActivity extends AppCompatActivity {
                 .setDuration(300)
                 .withEndAction(() -> {
                     //replace the image
-                    scaleResIntoImageView(mNewTileButton.getWidth(),mNewTileButton.getHeight(),newTileResID,mNewTileButton);
+                    scaleResIntoImageView(mNewTileButton.getWidth(), mNewTileButton.getHeight(), newTileResID, mNewTileButton);
                     //flip it back
                     mNewTileButton.setTag(newTileResID);
                     mNewTileButton.setRotationY(-90);
@@ -498,7 +503,6 @@ public class MainActivity extends AppCompatActivity {
 
             //to get a call back from TTS we mst supply a KEY_PARAM_UTTERANCE_ID
             HashMap<String, String> ttsHashMap = new HashMap<>();
-            ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_NOTIFICATION));
             ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
             mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, ttsHashMap);
         } else {
@@ -512,7 +516,7 @@ public class MainActivity extends AppCompatActivity {
         boolean playChime = preferences.getBoolean(getString(R.string.pref_key_chime_on_gem),
                 getResources().getBoolean(R.bool.chime_on_gem));
 
-        if ((mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) && (playChime))  {
+        if ((mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) && (playChime)) {
             Log.d(TAG, "playChimeSound: Playing chime");
 
             //try to reuse the chime player or create one if needed
@@ -524,7 +528,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Trying to play the chime is the last action so the button can be re enabled
-        runOnUiThread(()-> mNewTileButton.setEnabled(true));
+        runOnUiThread(() -> mNewTileButton.setEnabled(true));
 
     }
 
@@ -534,8 +538,8 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         //if we are playing bg music pause it
-        if(mBGMusic != null) {
-            if(mBGMusic.isPlaying()) {
+        if (mBGMusic != null) {
+            if (mBGMusic.isPlaying()) {
                 mBGMusic.pause();
             }
         }
