@@ -13,3 +13,6 @@
 /captures
 /License
 .externalNativeBuild
+*.apk
+/app/release/*
+/.idea/dictionaries/*
