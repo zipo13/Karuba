@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_board_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#444444"
+    tools:context=".PlayerSelectionActivity">
+
+    <ImageView
+        android:id="@+id/jungle_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"/>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageButton
+            android:id="@+id/meeple_reset"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@null"
+            app:layout_constraintHorizontal_bias="0"
+            android:scaleType="fitXY"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:srcCompat="@drawable/restart"
+            android:contentDescription="@string/start_new_game"/>
+
+        <ImageButton
+            android:id="@+id/settings"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintHorizontal_bias="1"
+            android:background="@null"
+            android:scaleType="fitXY"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/gear"
+            android:contentDescription="@string/app_settings"/>
+
+        <ImageView
+            android:id="@+id/full_board"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:background="@null"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/karuba_board" />
+
+        <ImageView
+            android:id="@+id/meeple_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/meeple_2"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/full_board"
+            app:srcCompat="@drawable/ic_meep_blue" />
+
+        <ImageView
+            android:id="@+id/temple_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/temple_2"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/meeple_1"
+            app:srcCompat="@drawable/ic_temple_blue" />
+
+        <ImageView
+            android:id="@+id/meeple_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/meeple_3"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/meeple_1"
+            app:layout_constraintTop_toBottomOf="@+id/full_board"
+            app:srcCompat="@drawable/ic_meep_brown" />
+
+        <ImageView
+            android:id="@+id/meeple_3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/meeple_4"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/meeple_2"
+            app:layout_constraintTop_toBottomOf="@+id/full_board"
+            app:srcCompat="@drawable/ic_meep_orange" />
+
+        <ImageView
+            android:id="@+id/meeple_4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/meeple_3"
+            app:layout_constraintTop_toBottomOf="@+id/full_board"
+            app:srcCompat="@drawable/ic_meep_purple" />
+
+        <ImageView
+            android:id="@+id/temple_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/temple_3"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/temple_1"
+            app:layout_constraintTop_toBottomOf="@+id/meeple_2"
+            app:srcCompat="@drawable/ic_temple_brown" />
+
+        <ImageView
+            android:id="@+id/temple_3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toStartOf="@+id/temple_4"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/temple_2"
+            app:layout_constraintTop_toBottomOf="@+id/meeple_3"
+            app:srcCompat="@drawable/ic_temple_orange" />
+
+        <ImageView
+            android:id="@+id/temple_4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/temple_3"
+            app:layout_constraintTop_toBottomOf="@+id/meeple_4"
+            app:srcCompat="@drawable/ic_temple_purple" />
+
+        <ImageButton
+            android:id="@+id/set_meeple"
+            android:layout_width="150dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="24dp"
+            android:background="@null"
+            android:scaleType="fitXY"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/temple_1"
+            app:srcCompat="@drawable/set_meeple" />
+
+        <ImageButton
+            android:id="@+id/begin_adventure"
+            android:layout_width="300dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="32dp"
+            android:alpha="0"
+            android:background="@null"
+            android:scaleType="fitXY"
+            android:visibility="invisible"
+            android:enabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/set_meeple"
+            app:srcCompat="@drawable/begin_adventure" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

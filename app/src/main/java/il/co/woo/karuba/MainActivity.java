@@ -2,30 +2,25 @@ package il.co.woo.karuba;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ContextThemeWrapper;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.Glide;
@@ -34,100 +29,93 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
+import il.co.woo.karuba.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final int CLEAR_RESULT = 123;
 
     private static final int NUMBER_OF_TILE_ROWS = 6;
     private static final int NUMBER_OF_TILE_COLUMNS = 6;
     private static final int NEW_IMAGE_VIEW_ID = 25879;
-    private static final int NEW_BACKGROUND_ID = 25979;
+    private ActivityMainBinding binder;
 
     private static final String TILE_IMG_NAME_PREFIX = "tile_";
     private static final String DRAWABLE_TYPE = "drawable";
     private static final String TAG = "MainActivity";
-    private TilesViewModel mViewModel;
-    private int mNumberOfMovedTiles;
+    private TilesViewModel viewModel;
+    private int numberOfMovedTiles;
 
-    private TextToSpeech mTTS;
-    private boolean mTTSInit = false;
-    private MediaPlayer chimePlayer;
-    private MediaPlayer mBGMusic;
+    private TextToSpeech textToSpeech;
+    private boolean ttsWasInit = false;
+    private MediaPlayer chimePlayerMediaPlayer;
+    private MediaPlayer bgMusicMediaPlayer;
 
-    @BindView(R.id.new_tile)
-    ImageButton mNewTileButton;
-    @BindView(R.id.game_board)
-    ImageView mGameBoardImageView;
-    @BindView(R.id.main_layout)
-    ConstraintLayout mMainLayout;
-    @BindView(R.id.settings_button)
-    ImageButton mSettingsButton;
-    @BindView(R.id.reset_button)
-    ImageButton mResetButton;
-    @BindView(R.id.tts_status_button)
-    ImageButton mTTSStatusButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate: Enter");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
+        binder = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binder.getRoot());
 
-        mNumberOfMovedTiles = 0;
-        mViewModel = ViewModelProviders.of(this).get(TilesViewModel.class);
+        numberOfMovedTiles = 0;
+        viewModel = new ViewModelProvider(this).get(TilesViewModel.class);
+
         //we defer this action because during OnCreate the final size of the image is no known yet
         //and so we don't know how to scale the image yet
-        mGameBoardImageView.post(this::loadInitialImages);
+        binder.gameBoard.post(this::loadInitialImages);
 
         initTTS();
         startBGMusic();
-        mNewTileButton.setOnClickListener(view -> {
+        binder.newTile.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on new tile button");
             newTileButtonClicked();
         });
 
-        mSettingsButton.setOnClickListener(view -> {
+        binder.settingsButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on Settings button");
             settingsButtonClicked();
         });
 
         //TTS init is very slow and so
-        mTTSStatusButton.setOnClickListener(view -> {
+        binder.ttsStatusButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on TTS status button");
-            if (mTTSInit) {
+            if (ttsWasInit) {
                 Toast.makeText(this, getResources().getString(R.string.tile_tts_ready), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, getResources().getString(R.string.tile_tts_not_ready), Toast.LENGTH_SHORT).show();
             }
         });
 
-        mResetButton.setOnClickListener(view -> {
+        binder.resetButton.setOnClickListener(view -> {
             Log.d(TAG, "onClick: User clicked on the reset button");
 
             AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AlertDialogTheme));
             builder.setMessage(getResources().getString(R.string.start_new_game_question))
                     .setPositiveButton(getResources().getString(R.string.yes), (dialog, which) -> {
                         //clear the data
-                        mViewModel.newGame();
+                        viewModel.newGame();
 
                         //clear the board
                         ViewGroup parent = findViewById(android.R.id.content);
-                        for (int i = mNumberOfMovedTiles; i >= 0; i--) {
+                        for (int i = numberOfMovedTiles; i >= 0; i--) {
                             ImageView tile = findViewById(NEW_IMAGE_VIEW_ID + i);
                             if (tile != null) {
                                 parent.removeView(tile);
                             }
                         }
 
-                        mNewTileButton.setImageResource(R.drawable.tile_back);
-                        mNumberOfMovedTiles = 0;
-                        mNewTileButton.setEnabled(true);
+                        binder.newTile.setImageResource(R.drawable.tile_back);
+                        numberOfMovedTiles = 0;
+                        binder.newTile.setEnabled(true);
+
+                        Intent previousScreen = new Intent(getApplicationContext(), PlayerSelectionActivity.class);
+                        setResult(CLEAR_RESULT, previousScreen);
+                        finish();
                     })
                     .setNegativeButton(getResources().getString(R.string.no), null)
                     .show();
-
         });
         prepareCamDistanceForFlipAffect();
     }
@@ -141,12 +129,12 @@ public class MainActivity extends AppCompatActivity {
 
         //if this is the first time that we play bg music create the player
         if (playBgMusic) {
-            if (mBGMusic == null) {
-                mBGMusic = MediaPlayer.create(getApplicationContext(), R.raw.heart_of_the_jungle);
-                mBGMusic.setLooping(true);
+            if (bgMusicMediaPlayer == null) {
+                bgMusicMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.heart_of_the_jungle);
+                bgMusicMediaPlayer.setLooping(true);
             }
 
-            mBGMusic.start();
+            bgMusicMediaPlayer.start();
         }
     }
 
@@ -159,40 +147,40 @@ public class MainActivity extends AppCompatActivity {
     private void newTileButtonClicked() {
         Log.d(TAG, "newTileButtonClicked: Enter");
         //check if there are more tiles to draw
-        boolean thisIsTheLastTile = mViewModel.getNumberOfTilesLeft() <= 0;
+        boolean thisIsTheLastTile = viewModel.getNumberOfTilesLeft() <= 0;
         //to prevent fast clicks before the animation is over disable the button
-        mNewTileButton.setEnabled(false);
+        binder.newTile.setEnabled(false);
 
         //duplicate the last tile if its not the first tile
         //and if not all the tiles were already moved
-        if ((mViewModel.getNumberOfTilesLeft() != TilesViewModel.NUMBER_OF_TILES) &&
-                (mNumberOfMovedTiles != TilesViewModel.NUMBER_OF_TILES)) {
+        if ((viewModel.getNumberOfTilesLeft() != TilesViewModel.NUMBER_OF_TILES) &&
+                (numberOfMovedTiles != TilesViewModel.NUMBER_OF_TILES)) {
 
             //this is not the first tile so there should be there a last tile in the view model
-            int lastTileResID = getTileResIDFromTileIdx(mViewModel.getLastSelectedTile());
+            int lastTileResID = getTileResIDFromTileIdx(viewModel.getLastSelectedTile());
             if (lastTileResID > 0) {
 
-                ImageView newView = duplicateView(mNewTileButton, lastTileResID);
+                ImageView newView = duplicateView(binder.newTile, lastTileResID);
                 //the animation needs to be postponed because we need to wait for the
                 //duplicated tile to be generated first
                 final Handler handler = new Handler();
                 handler.postDelayed(() ->
                         slideTileToBoard(newView), 150);
             } else {
-                Log.e(TAG, "newTileButtonClicked: Could not duplicate last tile becuase the res id is not valid");
+                Log.e(TAG, "newTileButtonClicked: Could not duplicate last tile because the res id is not valid");
             }
         }
 
         //if this was the last tile replace the tile with empty tile
         if (thisIsTheLastTile) {
             Toast.makeText(this, getApplication().getString(R.string.no_more_tiles), Toast.LENGTH_SHORT).show();
-            mNewTileButton.setTag(null);
+            binder.newTile.setTag(null);
             Glide
                     .with(this)
                     .load(R.drawable.empty_tile)
-                    .into(mNewTileButton);
+                    .into(binder.newTile);
         } else {
-            mNewTileButton.setImageResource(R.drawable.tile_back);
+            binder.newTile.setImageResource(R.drawable.tile_back);
             startFlipAnimation(getNewRandomTileResID());
         }
     }
@@ -200,18 +188,18 @@ public class MainActivity extends AppCompatActivity {
     private void initTTS() {
         Log.d(TAG, "initTTS: Enter");
         //assume the worst
-        mTTSInit = false;
+        ttsWasInit = false;
 
         //create a TTS and do not use it until you get a confirmation that the init process went well
-        mTTS = new TextToSpeech(this, status -> {
+        textToSpeech = new TextToSpeech(this, status -> {
 
             //OnInit of TTS is run on the main thread and so is VERY slow
             new Thread(() -> {
                 if (status == TextToSpeech.SUCCESS) {
                     //use English - not sure about other languages at the moment.
-                    mTTS.setSpeechRate(0.7f);
-                    mTTS.setPitch(1.1f);
-                    int result = mTTS.setLanguage(Locale.US);
+                    textToSpeech.setSpeechRate(0.7f);
+                    textToSpeech.setPitch(1.1f);
+                    int result = textToSpeech.setLanguage(Locale.US);
 
                     if (result == TextToSpeech.LANG_MISSING_DATA
                             || result == TextToSpeech.LANG_NOT_SUPPORTED) {
@@ -224,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
                         //Init went fine.
                         //Set a listener when the TTS message finish as we sometime want
                         //to chime if a tile with a gem was produced.
-                        mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                             @Override
                             public void onStart(String utteranceId) {
                             }
@@ -240,8 +228,8 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d(TAG, "onError: TTS error while trying to say: " + utteranceId);
                             }
                         });
-                        mTTSInit = true;
-                        runOnUiThread(() -> mTTSStatusButton.setVisibility(View.GONE));
+                        ttsWasInit = true;
+                        runOnUiThread(() -> binder.ttsStatusButton.setVisibility(View.GONE));
                     }
                 } else {
                     Log.e("TTS", "Initialization failed");
@@ -258,33 +246,14 @@ public class MainActivity extends AppCompatActivity {
                 Toast.LENGTH_LONG).show());
     }
 
-
-    //a helper function to create images and set a scaled image in them
-    private ImageView createImageView(int newID, int x, int y, int width, int height, int resID) {
-        //inflate an image view
-        @SuppressLint("InflateParams") ImageView iv = (ImageView) LayoutInflater.from(this).inflate(R.layout.tile_image_view, null);
-        //generate a new unique ID
-        iv.setId(newID);
-
-        iv.setX(x);
-        iv.setY(y);
-        scaleResIntoImageView(width, height, resID, iv);
-
-        //the width and height should also be exactly the same
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(width, height);
-        iv.setLayoutParams(layoutParams);
-        return iv;
-
-    }
-
     //this code is for the flip affect
     //if the camera is too close in some cases the flip will cut because its too close to the
     //screen
     private void prepareCamDistanceForFlipAffect() {
         Log.d(TAG, "prepareCamDistanceForFlipAffect: Enter");
         float scale = getApplicationContext().getResources().getDisplayMetrics().density;
-        float distance = mNewTileButton.getCameraDistance() * (scale);
-        mNewTileButton.setCameraDistance(distance);
+        float distance = binder.newTile.getCameraDistance() * (scale);
+        binder.newTile.setCameraDistance(distance);
     }
 
     private void loadInitialImages() {
@@ -292,21 +261,14 @@ public class MainActivity extends AppCompatActivity {
         Glide.with(this)
                 .load(R.drawable.tile_board)
                 .centerCrop()
-                .into(mGameBoardImageView);
+                .into(binder.gameBoard);
 
-        ImageView background = createImageView(NEW_BACKGROUND_ID,
-                0,
-                mGameBoardImageView.getHeight(),
-                mGameBoardImageView.getWidth(),
-                Math.round(mMainLayout.getHeight() - mGameBoardImageView.getHeight()),
-                R.drawable.jungle);
-
-        //add it to the view group
-        ViewGroup view = findViewById(android.R.id.content);
-        view.addView(background, 0);
+        Glide.with(this)
+                .load(R.drawable.jungle).fitCenter()
+                .into(binder.tileJungleBg);
 
         //check with the view model to see if this is a new game or is there save data already
-        ArrayList<Integer> usedTilesArray = mViewModel.getExistingTiles();
+        ArrayList<Integer> usedTilesArray = viewModel.getExistingTiles();
         if (usedTilesArray.size() == 0)
             return;
 
@@ -315,14 +277,13 @@ public class MainActivity extends AppCompatActivity {
             //if this is the last tile we want to draw it on the stack and not on the board
             if (i + 1 == usedTilesArray.size()) {
                 int tileResId = getTileResIDFromTileIdx(usedTilesArray.get(i));
-                mNewTileButton.setTag(tileResId);
-                scaleResIntoImageView(mNewTileButton.getWidth(), mNewTileButton.getHeight(), tileResId, mNewTileButton);
+                binder.newTile.setTag(tileResId);
+                ViewUtils.scaleResIntoImageView(binder.newTile.getWidth(), binder.newTile.getHeight(), tileResId, this, binder.newTile);
             } else {
                 drawTileOnBoard(i, usedTilesArray.get(i));
-                mNumberOfMovedTiles++;
+                numberOfMovedTiles++;
             }
         }
-
     }
 
     //Draw a tile directly on the board
@@ -333,10 +294,10 @@ public class MainActivity extends AppCompatActivity {
         //get the image of the last tile and put it in the new tile
         int tileResID = getTileResIDFromTileIdx(tileIdx);
         //generate a new unique ID
-        int newID = NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles;
+        int newID = NEW_IMAGE_VIEW_ID + numberOfMovedTiles;
 
         //put it exactly over the old tile
-        ImageView newImageView = createImageView(newID,
+        ImageView newImageView = ViewUtils.createImageView(this, newID,
                 tilePlacement.left,
                 tilePlacement.top,
                 tilePlacement.width(),
@@ -355,10 +316,10 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "duplicateView: Enter");
         //inflate a new tile from the layout
         //generate a new unique ID
-        int newId = NEW_IMAGE_VIEW_ID + mNumberOfMovedTiles;
+        int newId = NEW_IMAGE_VIEW_ID + numberOfMovedTiles;
 
         //put it exactly over the old tile
-        ImageView newImageView = createImageView(newId,
+        ImageView newImageView = ViewUtils.createImageView(this, newId,
                 Math.round(imageView.getX()),
                 Math.round(imageView.getY()),
                 imageView.getWidth(),
@@ -377,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
 
     private int getNewRandomTileResID() {
         Log.d(TAG, "getNewRandomTileResID: Enter");
-        int random = mViewModel.getRandomTile();
+        int random = viewModel.getRandomTile();
         if (random == 0)
             return 0;
         return getTileResIDFromTileIdx(random);
@@ -393,10 +354,10 @@ public class MainActivity extends AppCompatActivity {
 
     private Rect calculateTilePlacement(int tileIdx) {
         //get the dimensions and location of the board
-        float gameBoardXCord = mGameBoardImageView.getX();
-        float gameBoardYCord = mGameBoardImageView.getY();
-        int gameBoardWidth = mGameBoardImageView.getWidth();
-        int gameBoardHeight = mGameBoardImageView.getHeight();
+        float gameBoardXCord = binder.gameBoard.getX();
+        float gameBoardYCord = binder.gameBoard.getY();
+        int gameBoardWidth = binder.gameBoard.getWidth();
+        int gameBoardHeight = binder.gameBoard.getHeight();
 
         //calc the final size of the tile on the board
         int tileWidth = gameBoardWidth / NUMBER_OF_TILE_COLUMNS;
@@ -418,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
         if (imageView == null)
             return;
 
-        Rect tilePlacement = calculateTilePlacement(mNumberOfMovedTiles);
+        Rect tilePlacement = calculateTilePlacement(numberOfMovedTiles);
 
         //calc the scale factor for X and Y
         float scaleX = tilePlacement.width() / (float) imageView.getWidth();
@@ -440,24 +401,15 @@ public class MainActivity extends AppCompatActivity {
                         int reqWidth = Math.round(imageView.getWidth() * imageView.getScaleX());
                         int reqHeight = Math.round(imageView.getHeight() * imageView.getScaleY());
 
-                        //resmaple the bitmap to save memory
+                        //resample the bitmap to save memory
                         // Load a bitmap from the drawable folder
                         int tag = (int) imageView.getTag();
-                        scaleResIntoImageView(reqWidth, reqHeight, tag, imageView);
+                        ViewUtils.scaleResIntoImageView(reqWidth, reqHeight, tag, MainActivity.this, imageView);
                     }
 
                 });
-        mNumberOfMovedTiles++;
+        numberOfMovedTiles++;
 
-    }
-
-    //this method is used to take a resource image and scale it to the needed size on the device
-    private void scaleResIntoImageView(int reqWidth, int reqHeight, int resID, ImageView imageView) {
-        Log.d(TAG, "scaleResIntoImageView: Enter");
-        Bitmap bMap = BitmapFactory.decodeResource(getResources(), resID);
-        Bitmap bMapScaled = Bitmap.createScaledBitmap(bMap, reqWidth, reqHeight, true);
-        // Loads the resized Bitmap into an ImageView
-        imageView.setImageBitmap(bMapScaled);
     }
 
 
@@ -468,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
         //1. flip the ImageView half way (90 deg)
         //2. replace the image
         //3. flip the ImageView back (-90 deg)
-        mNewTileButton.animate()
+        binder.newTile.animate()
                 //flip it half way
                 .setStartDelay(300)
                 .withLayer()
@@ -476,11 +428,11 @@ public class MainActivity extends AppCompatActivity {
                 .setDuration(300)
                 .withEndAction(() -> {
                     //replace the image
-                    scaleResIntoImageView(mNewTileButton.getWidth(), mNewTileButton.getHeight(), newTileResID, mNewTileButton);
+                    ViewUtils.scaleResIntoImageView(binder.newTile.getWidth(), binder.newTile.getHeight(), newTileResID, this, binder.newTile);
                     //flip it back
-                    mNewTileButton.setTag(newTileResID);
-                    mNewTileButton.setRotationY(-90);
-                    mNewTileButton.animate()
+                    binder.newTile.setTag(newTileResID);
+                    binder.newTile.setRotationY(-90);
+                    binder.newTile.animate()
                             .withLayer()
                             .rotationY(0)
                             .setDuration(300)
@@ -498,13 +450,16 @@ public class MainActivity extends AppCompatActivity {
         boolean readOutLoud = preferences.getBoolean(getString(R.string.pref_key_declare_tile_out_loud),
                 getResources().getBoolean(R.bool.declare_tile_name_out_loud));
 
-        if (readOutLoud && mTTSInit) {
-            String text = getString(R.string.tile) + " " + mViewModel.getLastSelectedTile();
+        if (readOutLoud && ttsWasInit) {
+            String text = getString(R.string.tile) + " " + viewModel.getLastSelectedTile();
 
             //to get a call back from TTS we mst supply a KEY_PARAM_UTTERANCE_ID
-            HashMap<String, String> ttsHashMap = new HashMap<>();
-            ttsHashMap.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
-            mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, ttsHashMap);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, text);
+            }
+            else {
+                textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+            }
         } else {
             playChimeSound();
         }
@@ -516,19 +471,19 @@ public class MainActivity extends AppCompatActivity {
         boolean playChime = preferences.getBoolean(getString(R.string.pref_key_chime_on_gem),
                 getResources().getBoolean(R.bool.chime_on_gem));
 
-        if ((mViewModel.getTileHasGem(mViewModel.getLastSelectedTile())) && (playChime)) {
+        if ((viewModel.getTileHasGem(viewModel.getLastSelectedTile())) && (playChime)) {
             Log.d(TAG, "playChimeSound: Playing chime");
 
             //try to reuse the chime player or create one if needed
-            if (chimePlayer == null) {
+            if (chimePlayerMediaPlayer == null) {
                 Log.d(TAG, "playChimeSound: First chimePlayer created");
-                chimePlayer = MediaPlayer.create(this, R.raw.chime);
+                chimePlayerMediaPlayer = MediaPlayer.create(this, R.raw.chime);
             }
-            chimePlayer.start();
+            chimePlayerMediaPlayer.start();
         }
 
         //Trying to play the chime is the last action so the button can be re enabled
-        runOnUiThread(() -> mNewTileButton.setEnabled(true));
+        runOnUiThread(() -> binder.newTile.setEnabled(true));
 
     }
 
@@ -538,9 +493,9 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         //if we are playing bg music pause it
-        if (mBGMusic != null) {
-            if (mBGMusic.isPlaying()) {
-                mBGMusic.pause();
+        if (bgMusicMediaPlayer != null) {
+            if (bgMusicMediaPlayer.isPlaying()) {
+                bgMusicMediaPlayer.pause();
             }
         }
     }
@@ -558,23 +513,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: Enter");
 
-        if (mTTS != null) {
-            mTTS.stop();
-            mTTS.shutdown();
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
         }
 
-        if (chimePlayer != null) {
-            chimePlayer.reset();
-            chimePlayer.release();
+        if (chimePlayerMediaPlayer != null) {
+            chimePlayerMediaPlayer.reset();
+            chimePlayerMediaPlayer.release();
         }
 
-        if (mBGMusic != null) {
-            mBGMusic.reset();
-            mBGMusic.release();
+        if (bgMusicMediaPlayer != null) {
+            bgMusicMediaPlayer.reset();
+            bgMusicMediaPlayer.release();
         }
 
         super.onDestroy();
-
-
     }
 }

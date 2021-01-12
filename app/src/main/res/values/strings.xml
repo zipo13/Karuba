@@ -31,5 +31,6 @@
     <string name="tile_tts_ready">Tile declaration is ready</string>
     <string name="tile_tts_not_ready">Tile declaration is not ready yet, loading speech engine...</string>
     <string name="music_credit">Jungle music, Heart of the Jungle by Alexander Hoff, licensed under a Creative Commons Attribution 4 International License</string>
+    <string name="temple_icon">Temple icon made by Freepik from www.flaticon.com</string>
 
 </resources>
